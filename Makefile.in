@@ -50,8 +50,9 @@ INJECTOROBJ = tools/injector.o
 INJECTOROUT = tools/injector
 
 CSIFUNCOBJ = tools/csi_func.o
-CSIFUNCOUT = tools/csi_func
+CSIFUNC = tools/csi_func.h
 
+OBJS = tools/injector.o tools/csi_func.o
 
 all:	$(DEPEND) $(LIBOUT) 
 
@@ -68,11 +69,11 @@ $(TXTUNOUT):	$(TXTUNOBJ)
 $(MCSSWEEP2OUT):	$(MCSSWEEP2OBJ)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(MCSSWEEP2OUT) $(MCSSWEEP2OBJ) $(LIBS) -lorcon2 
 
-$(CSIFUNCOUT):  $(CSIFUNCOBJ) tools/csi_func.h
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(CSIFUNCOUT) $(CSIFUNCOBJ) $(LIBS) -lorcon2
-
-$(INJECTOROUT):	$(INJECTOROBJ) $(CSIFUNCOBJ)
+$(INJECTOROUT):	$(INJECTOROBJ) $(CSIFUNC)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(INJECTOROUT) $(INJECTOROBJ) $(LIBS) -lorcon2
+
+sendINET: $(OBJS)
+	$(CC) $(OBJS) -o injector_ap
 
 tools:	$(LIBOUT) $(TXTUNOUT) $(L2PINGOUT) $(MCSSWEEP2OUT) $(INJECTOROUT)
 
@@ -101,7 +102,6 @@ clean:
 	@-rm -f $(MCSSWEEP2OUT)
 	@-rm -f $(TXTUNOUT)
 	@-rm -f $(INJECTOROUT)
-	@-rm -f $(CSIFUNCOUT)
 
 distclean:
 	@-$(MAKE) clean
