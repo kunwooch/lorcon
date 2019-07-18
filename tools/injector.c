@@ -101,6 +101,33 @@ int read_csi_buf(unsigned char* buf_addr,int fd, int buf_size){
         return 0;
 }
 
+void record_status(unsigned char* buf_addr, int cnt, csi_struct* csi_status_tmp){
+    int i;
+    csi_status_tmp->tstamp  =
+         ((buf_addr[0] << 56) & 0x00000000000000ff) | ((buf_addr[1] << 48) & 0x000000000000ff00) |
+         ((buf_addr[2] << 40) & 0x0000000000ff0000) | ((buf_addr[3] << 32) & 0x00000000ff000000) |
+         ((buf_addr[4] << 24) & 0x000000ff00000000) | ((buf_addr[5] << 16) & 0x0000ff0000000000) |
+         ((buf_addr[6] << 8)  & 0x00ff000000000000) | ((buf_addr[7])       & 0xff00000000000000) ;
+    csi_status_tmp->csi_len = ((buf_addr[8] << 8) & 0xff00) | (buf_addr[9] & 0x00ff);
+    csi_status_tmp->channel = ((buf_addr[10] << 8) & 0xff00) | (buf_addr[11] & 0x00ff);
+    csi_status_tmp->buf_len = ((buf_addr[cnt-2] << 8) & 0xff00) | (buf_addr[cnt-1] & 0x00ff);
+    csi_status_tmp->payload_len = ((buf_addr[csi_st_len] << 8) & 0xff00) | ((buf_addr[csi_st_len + 1]) & 0x00ff);
+    csi_status_tmp->phyerr    = buf_addr[12];
+    csi_status_tmp->noise     = buf_addr[13];
+    csi_status_tmp->rate      = buf_addr[14];
+    csi_status_tmp->chanBW    = buf_addr[15];
+    csi_status_tmp->num_tones = buf_addr[16];
+    csi_status_tmp->nr        = buf_addr[17];
+    csi_status_tmp->nc        = buf_addr[18];
+
+    csi_status_tmp->rssi      = buf_addr[19];
+    csi_status_tmp->rssi_0    = buf_addr[20];
+    csi_status_tmp->rssi_1    = buf_addr[21];
+    csi_status_tmp->rssi_2    = buf_addr[22];
+    csi_status_tmp->mac_addr  = buf_addr[csi_st_len + csi_status_tmp->csi_len + 16 + 1];
+}
+
+
 void sig_handler(int signo){
     if(signo == SIGINT){
         quit = 1;
