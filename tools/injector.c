@@ -112,7 +112,7 @@ void usage(char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
-    int    i,total_msg_cnt,cnt;
+    int    total_msg_cnt,cnt;
     int    data_len,data_len_local;
     int    byte_cnt,send_cnt;
 
@@ -450,20 +450,20 @@ int main(int argc, char *argv[]) {
                     printf("--------------inject to other clients!--------------\n");
 		    count = 0;
 	            	    
-		    memset(payload, 0, 2*payload_len);
-		    memset(payload_1, 0, payload_len);
-		    for (i = 0; i < payload_len; i++){
+		    memset(payload, 0, 2*PAYLOAD_LEN);
+		    memset(payload_1, 0, PAYLOAD_LEN);
+		    for (i = 0; i < PAYLOAD_LEN; i++){
 			    payload[2*i] = count & 0x00ff;
 			    payload[2*i+1] = (count & 0xff00) >> 8;
 		    }
 		    memset(encoded_payload, 0, 14);
 
 		    // set mcs count
-		    encoded_payload[0] = mcs;
-		    if (gi)
-			encoded_payload[0] |= ht_flag_gi;
-		    if (bw)
-			encoded_payload[0] |= ht_flag_40;
+		    encoded_payload[0] = MCS;
+		    if (GI)
+			encoded_payload[0] |= HT_FLAG_GI;
+		    if (BW)
+			encoded_payload[0] |= HT_FLAG_40;
 
 		    // set the location code
 		    encoded_payload[1] = lcode & 0xff;
@@ -473,10 +473,10 @@ int main(int argc, char *argv[]) {
 		    *encoded_session = htonl(session_id);
 
 
-		    snprintf((char *) payload_1, payload_len, "mcs %u %s%s packet %u of %u",
-				mcs,
-				bw ? "40mhz" : "20mhz",
-				gi ? " short-gi": "",
+		    snprintf((char *) payload_1, PAYLOAD_LEN, "mcs %u %s%s packet %u of %u",
+				MCS,
+				BW ? "40mhz" : "20mhz",
+				GI ? " short-gi": "",
 				count,
 				npackets);
 
@@ -484,22 +484,22 @@ int main(int argc, char *argv[]) {
 		    metapack = lcpa_init();
 
 		    // create timestamp
-		    gettimeofday(&time, null);
+		    gettimeofday(&time, NULL);
 		    timestamp = time.tv_sec * 1000000 + time.tv_usec;
 
-		    lcpf_data(metapack,fcflags,duration,ra_mac,ta_mac,ra_mac,ta_mac,fragement,sequence);
+		    lcpf_data(metapack,fcflags,duration,RA_MAC,TA_MAC,RA_MAC,TA_MAC,fragement,sequence);
 
 
 		    lcpf_add_ie(metapack, 0, strlen("packet_injection"), "packet_injection");
 		    lcpf_add_ie(metapack, 10, 14, encoded_payload);
-		    lcpf_add_ie(metapack, 11, 2*payload_len, payload);
+		    lcpf_add_ie(metapack, 11, 2*PAYLOAD_LEN, payload);
 		    lcpf_add_ie(metapack, 12, strlen((char *) payload_1), payload_1);
 
 
 		    // convert the lorcon metapack to a lorcon packet for sending
 		    txpack = (lorcon_packet_t *) lorcon_packet_from_lcpa(context, metapack);
 
-		    lorcon_packet_set_mcs(txpack, 1, mcs, gi, bw);
+		    lorcon_packet_set_mcs(txpack, 1, MCS, GI, BW);
 
 		    if (lorcon_inject(context,txpack) < 0 )
 			return -1;
