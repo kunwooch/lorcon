@@ -47,6 +47,10 @@
 #include <sys/select.h>
 #include <netdb.h>
 
+#include <stdbool.h>
+
+#define csi_st_len 23
+
 #include <lorcon2/csi_func.h>
 #include <lorcon2/lorcon.h>
 #include <lorcon2/lorcon_forge.h>
@@ -59,6 +63,38 @@
 
 #define PAYLOAD_LEN 64
 #define BUFSIZE 4096
+#define Kernel_CSI_ST_LEN 23 
+typedef struct
+{
+    int real;
+    int imag;
+}COMPLEX;
+
+typedef struct
+{
+    u_int64_t tstamp;         /* h/w assigned time stamp */
+
+    u_int16_t channel;        /* wireless channel (represented in Hz)*/
+    u_int8_t  chanBW;         /* channel bandwidth (0->20MHz,1->40MHz)*/
+
+    u_int8_t  rate;           /* transmission rate*/
+    u_int8_t  nr;             /* number of receiving antenna*/
+    u_int8_t  nc;             /* number of transmitting antenna*/
+    u_int8_t  num_tones;      /* number of tones (subcarriers) */
+    u_int8_t  noise;          /* noise floor (to be updated)*/
+    u_int8_t  mac_addr;        /* mac address */
+    u_int8_t  phyerr;         /* phy error code (set to 0 if correct)*/
+
+    u_int8_t    rssi;         /*  rx frame RSSI */
+    u_int8_t    rssi_0;       /*  rx frame RSSI [ctl, chain 0] */
+    u_int8_t    rssi_1;       /*  rx frame RSSI [ctl, chain 1] */
+    u_int8_t    rssi_2;       /*  rx frame RSSI [ctl, chain 2] */
+
+    u_int16_t   payload_len;  /*  payload length (bytes) */
+    u_int16_t   csi_len;      /*  csi data length (bytes) */
+    u_int16_t   buf_len;      /*  data length in buffer */
+}csi_struct;
+
 unsigned char buf_addr[BUFSIZE];
 unsigned char data_buf[1500];
 
@@ -69,6 +105,58 @@ int log_flag;
 FILE*  fp;
 COMPLEX csi_matrix[3][3][114];
 csi_struct*   csi_status;
+
+
+int open_csi_device(){
+   int fd;
+   fd = open("/dev/CSI_dev",O_RDWR);
+    return fd;
+}
+
+void close_csi_device(int fd){
+    close(fd);
+    remove("/dev/CSI_dev");
+}
+
+
+int read_csi_buf(unsigned char* buf_addr,int fd, int BUFSIZE){
+    int cnt;
+    /* listen to the port
+     * read when 1, a csi is reported from kernel
+     *           2, time out
+     */
+    cnt = read(fd,buf_addr,BUFSIZE);
+    if(cnt)
+        return cnt;
+    else
+        return 0;
+}
+
+void record_status(unsigned char* buf_addr, int cnt, csi_struct* csi_status){
+    int i;
+	csi_status->tstamp  =
+	    ((buf_addr[0] << 56) & 0x00000000000000ff) | ((buf_addr[1] << 48) & 0x000000000000ff00) |
+	    ((buf_addr[2] << 40) & 0x0000000000ff0000) | ((buf_addr[3] << 32) & 0x00000000ff000000) |
+	    ((buf_addr[4] << 24) & 0x000000ff00000000) | ((buf_addr[5] << 16) & 0x0000ff0000000000) |
+	    ((buf_addr[6] << 8)  & 0x00ff000000000000) | ((buf_addr[7])       & 0xff00000000000000) ;
+	csi_status->csi_len = ((buf_addr[8] << 8) & 0xff00) | (buf_addr[9] & 0x00ff);
+	csi_status->channel = ((buf_addr[10] << 8) & 0xff00) | (buf_addr[11] & 0x00ff);
+	csi_status->buf_len = ((buf_addr[cnt-2] << 8) & 0xff00) | (buf_addr[cnt-1] & 0x00ff);
+	csi_status->payload_len = ((buf_addr[csi_st_len] << 8) & 0xff00) | ((buf_addr[csi_st_len + 1]) & 0x00ff);
+    csi_status->phyerr    = buf_addr[12];
+    csi_status->noise     = buf_addr[13];
+    csi_status->rate      = buf_addr[14];
+    csi_status->chanBW    = buf_addr[15];
+    csi_status->num_tones = buf_addr[16];
+    csi_status->nr        = buf_addr[17];
+    csi_status->nc        = buf_addr[18];
+
+    csi_status->rssi      = buf_addr[19];
+    csi_status->rssi_0    = buf_addr[20];
+    csi_status->rssi_1    = buf_addr[21];
+    csi_status->rssi_2    = buf_addr[22];
+    csi_status->mac_addr  = buf_addr[csi_st_len + csi_status->csi_len + 16 + 1];
+}
 
 void sig_handler(int signo){
     if(signo == SIGINT){
