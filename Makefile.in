@@ -34,7 +34,7 @@ LIBOBJ = ifcontrol_linux.lo iwcontrol.lo madwifing_control.lo nl80211_control.lo
 		 lorcon_packet.lo lorcon_packasm.lo lorcon_forge.lo \
 		 drv_mac80211.lo drv_tuntap.lo drv_madwifing.lo drv_file.lo \
 		 sha1.lo \
-		 lorcon.lo lorcon_multi.lo 
+		 lorcon.lo lorcon_multi.lo csi_func.o 
 LIBOUT = liborcon2.la
 
 TXTESTOBJ = tx.o
@@ -49,12 +49,15 @@ MCSSWEEP2OUT = tools/mcs_sweep2
 INJECTOROBJ = tools/injector.o
 INJECTOROUT = tools/injector
 
-CSIFUNCOBJ = tools/csi_func.o
-CSIFUNC = tools/csi_func.h
+CSIFUNCOBJ = csi_func.o
+CSIFUNC = csi_func.h
 
-OBJS = tools/injector.o tools/csi_func.o
+OBJS = tools/injector.o csi_func.o
 
 all:	$(DEPEND) $(LIBOUT) 
+
+sendINET: $(OBJS)
+	$(CC) $(OBJS) -o injector_ap
 
 $(LIBOUT):	$(LIBOBJ)
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) $(LIBS) -o $(LIBOUT) $(LIBOBJ) \
@@ -71,9 +74,6 @@ $(MCSSWEEP2OUT):	$(MCSSWEEP2OBJ)
 
 $(INJECTOROUT):	$(INJECTOROBJ) $(CSIFUNC)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(INJECTOROUT) $(INJECTOROBJ) $(LIBS) -lorcon2
-
-sendINET: $(OBJS)
-	$(CC) $(OBJS) -o injector_ap
 
 tools:	$(LIBOUT) $(TXTUNOUT) $(L2PINGOUT) $(MCSSWEEP2OUT) $(INJECTOROUT)
 
