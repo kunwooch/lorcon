@@ -80,6 +80,7 @@ install:	$(LIBOUT)
 	install -m 644 lorcon_forge.h $(INCLUDE)/lorcon2/lorcon_forge.h
 	install -m 644 lorcon_multi.h $(INCLUDE)/lorcon2/lorcon_multi.h
 	install -m 644 ieee80211.h $(INCLUDE)/lorcon2/lorcon_ieee80211.h
+	install -m 644 csi_func.h $(INCLUDE)/lorcon2/csi_func.h
 	install -d -m 755 $(MAN)/man3
 	install -m 644 lorcon.3 $(MAN)/man3/lorcon.3
 

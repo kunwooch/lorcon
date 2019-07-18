@@ -46,8 +46,8 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <netdb.h>
-#include "csi_func.h"
 
+#include <lorcon2/csi_func.h>
 #include <lorcon2/lorcon.h>
 #include <lorcon2/lorcon_forge.h>
 #include <lorcon2/lorcon_packasm.h>
