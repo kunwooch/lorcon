@@ -146,11 +146,11 @@ void exit_program(){
 int checkCPUendian(){
     int num = 1;
     if(*((char*)&num) == 1){
-        printf("Little-endian\n");
+        //printf("Little-endian\n");
         return 0;
     }
     else{
-        printf("Big-endian\n");
+        //printf("Big-endian\n");
         return 1;
     }
 }
@@ -511,9 +511,9 @@ int main(int argc, char *argv[]) {
 	    u_int16_t csi_len = ((buf_addr[8] << 8) & 0xff00) | (buf_addr[9] & 0x00ff);
             u_int8_t mac_addr = buf_addr[csi_st_len + csi_len + 16 + 1];
 
-	    printf("========  Bsic Information of the Transmission ==========\n");
-            printf("received addr = %d |",mac_addr);
-            printf("target addr = %d   |",src_addr);
+	    //printf("========  Bsic Information of the Transmission ==========\n");
+            printf("recv addr = %d |",mac_addr);
+            printf("target src addr = %d \n",src_addr);
 
 	    if(src_addr == mac_addr){
                     printf("--------------inject to other clients!--------------\n");
