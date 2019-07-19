@@ -304,10 +304,7 @@ int main(int argc, char *argv[]) {
 		}
 		break;
         case 'o':
-		if (sscanf(optarg, "%s", &hostname) != 1) {
-                    printf("ERROR: Unable to parse hostname\n");
-                    return -1;
-                }
+		hostname = strdup(optarg);		
                 break;
         case 'p':
                 if (sscanf(optarg, "%u", &port) != 1) {
@@ -406,7 +403,7 @@ int main(int argc, char *argv[]) {
     printf("\n[.]\tMCS %u %s %s\n\n", MCS, BW ? "40MHz" : "20MHz", GI ? "short-gi" : "long-gi");
 
     /* ---------------------------------- client_main ---------------------------------- */
-    //csi_status = (csi_struct*)malloc(sizeof(csi_struct));
+    csi_status = (csi_struct*)malloc(sizeof(csi_struct));
 
     fd = open_csi_device();
     if (fd < 0){
@@ -600,7 +597,7 @@ int main(int argc, char *argv[]) {
     lorcon_free(context);	
 
     exit_program();
-    //free(csi_status);	
+    free(csi_status);	
     return 0;
 }
 
