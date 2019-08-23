@@ -87,8 +87,8 @@ struct injector_args {
     unsigned int interval;
     unsigned int npackets;
     unsigned int ttime;
-    uint8_t RA_MAC[6];
-    uint8_t *TA_MAC;
+    //uint8_t RA_MAC[6];
+    //uint8_t *TA_MAC;
     uint32_t session_id;
 };
 
@@ -269,6 +269,20 @@ void *inject_data(void *_args){
     struct timeval time;
     uint64_t timestamp;
 
+    uint8_t *dmac = "\x04\xF0\x21\x32\xBD\xA5";
+    uint8_t *bmac = "\x00\xDE\xAD\xBE\xEF\x00";
+
+    uint8_t RA_MAC[6];
+    RA_MAC[0] = 0x04;
+    RA_MAC[1] =0xF0;
+    RA_MAC[2] =0x21;
+    RA_MAC[3] =0x32;
+    RA_MAC[4] =0xBD;
+    RA_MAC[5] =0xA5;
+    uint8_t *TA_MAC;
+    uint8_t *DA_MAC = RA_MAC;
+    uint8_t *BSSID_MAC = bmac;
+
     struct injector_args *args = (struct injector_args *) _args;
 
     lorcon_t *context = args->context;
@@ -278,8 +292,8 @@ void *inject_data(void *_args){
     int GI = args->GI;
     unsigned int interval = args->interval;
     unsigned int npackets = args->npackets;
-    uint8_t RA_MAC[6] = args->RA_MAC;
-    uint8_t *TA_MAC = args->TA_MAC;
+    //uint8_t RA_MAC[6] = args->RA_MAC;
+    //uint8_t *TA_MAC = args->TA_MAC;
     uint32_t session_id = args->session_id;
     unsigned int ttime = args->ttime;
 
@@ -561,8 +575,8 @@ int main(int argc, char *argv[]) {
     args->GI = GI;
     args->npackets = npackets;
     args->interval = interval;
-    memcpy(args->RA_MAC, RA_MAC);
-    args->TA_MAC = TA_MAC;
+    //memcpy(args->RA_MAC, RA_MAC);
+    //args->TA_MAC = TA_MAC;
     args->session_id = session_id;
     args->ttime = ttime;
     /* ---------------------------------- client_main init---------------------------------- */
