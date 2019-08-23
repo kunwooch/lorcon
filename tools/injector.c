@@ -186,12 +186,23 @@ void usage(char *argv[]) {
     printf("\t%s -i mon0 -c 6HT20 -m 0 -n 1 -d 1 -o 192.168.1.211 -p 6767 -s 55\n\n", argv[0]);
 }
 
+bool isvalueinarray(int val, int *arr, int size){
+    int i;
+    for (i=0; i<size; i++){
+        if (arr[i] == val)
+            return true;
+    }
+    return false;
+}
+
 void *estimate_csi(void *vargp){
     int    total_msg_cnt,cnt;
     int    data_len,data_len_local;
     int    byte_cnt,send_cnt,recv_cnt;
     int    CPUendian;
     int    eMCS;
+    int    mac_array[] = {45, 55, 207, 122, 221, 11, 241, 25, 61};
+
     flag = 0;
     quit = 0;
     printf("# Receiving data! Press Ctrl+c to quit!\n");
@@ -217,25 +228,34 @@ void *estimate_csi(void *vargp){
 			t = tmp[1];tmp[1] = tmp[2];tmp[2] = t;
 		    }
 
-		    // send the count first
-		    send_cnt  = send(sock,(unsigned char *)&data_len,sizeof(int),0);
-		    if(send_cnt == -1){
-			perror("send");
-			exit_program();
-			return 0;
-		    }
-		    
-		    // send the actual data
-		    byte_cnt = 0;
-		    while(byte_cnt < data_len_local){
-			send_cnt = send(sock,buf_addr+byte_cnt,data_len_local-byte_cnt,0);
-			if(send_cnt == -1){
-			    perror("send");
-			    exit_program();
-			    return 0;
-			}
-			byte_cnt += send_cnt;
-		    }
+		    u_int16_t csi_len = ((buf_addr[8] << 8) & 0xff00) | (buf_addr[9] & 0x00ff);
+                    u_int8_t mac_addr = buf_addr[csi_st_len + csi_len + 16 + 1];
+
+	            int mac_array_size = (int)(sizeof(mac_array)/sizeof(mac_array[0]));
+                    printf("mac_addr is: %d \n",mac_addr);
+
+                    if (isvalueinarray(mac_addr, mac_array, mac_array_size)){
+			printf("send CSI to the server \n");
+		    	// send the count first
+		    	send_cnt  = send(sock,(unsigned char *)&data_len,sizeof(int),0);
+		    	if(send_cnt == -1){
+				perror("send");
+				exit_program();
+				return 0;
+		    	}
+		 
+		    	// send the actual data
+		    	byte_cnt = 0;
+		    	while(byte_cnt < data_len_local){
+				send_cnt = send(sock,buf_addr+byte_cnt,data_len_local-byte_cnt,0);
+				if(send_cnt == -1){
+			    	perror("send");
+			    	exit_program();
+			    	return 0;
+				}
+				byte_cnt += send_cnt;
+		    	}
+		     }
 		}
 	
         	//2) receive and update the MCS index
