@@ -189,7 +189,7 @@ void usage(char *argv[]) {
 void *estimate_csi(void *vargp){
     int    total_msg_cnt,cnt;
     int    data_len,data_len_local;
-    int    byte_cnt,send_cnt;
+    int    byte_cnt,send_cnt,recv_cnt;
     int    CPUendian;
     int    eMCS;
     flag = 0;
@@ -269,7 +269,7 @@ void *inject_data(void *_args){
     struct timeval time;
     uint64_t timestamp;
 
-    struct injector_args *args = (strct injector_args *) _args;
+    struct injector_args *args = (struct injector_args *) _args;
 
     lorcon_t *context = args->context;
     lcpa_metapack_t *metapack = args->metapack;
@@ -278,7 +278,7 @@ void *inject_data(void *_args){
     int GI = args->GI;
     unsigned int interval = args->interval;
     unsigned int npackets = args->npackets;
-    uint8_t RA_MAC[6] = args->RA_MAC;
+    uint8_t *RA_MAC = args->RA_MAC;
     uint8_t *TA_MAC = args->TA_MAC;
     uint32_t session_id = args->session_id;
     unsigned int ttime = args->ttime;
@@ -475,7 +475,6 @@ int main(int argc, char *argv[]) {
 		
 		printf("Read MAC, num:%d\n",tmp);
 		if (6 == tmp ){
-unsigned int ttime = 1;
 			printf("Read MAC, entering loop\n");
 			for(i = 0; i < 6; i++){
 				printf("Read MAC, loop index:%d\n",i);
