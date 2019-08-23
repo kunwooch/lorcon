@@ -246,7 +246,7 @@ void *estimate_csi(void *vargp){
 		    exit_program();
 		    return 0;
 		}
-		printf("MCS index received: ", eMCS);
+		printf("MCS index received: %d \n ", eMCS);
 	}
     }
     return NULL;
@@ -278,7 +278,7 @@ void *inject_data(void *_args){
     int GI = args->GI;
     unsigned int interval = args->interval;
     unsigned int npackets = args->npackets;
-    uint8_t *RA_MAC = args->RA_MAC;
+    uint8_t RA_MAC[6] = args->RA_MAC;
     uint8_t *TA_MAC = args->TA_MAC;
     uint32_t session_id = args->session_id;
     unsigned int ttime = args->ttime;
@@ -472,7 +472,6 @@ int main(int argc, char *argv[]) {
                 break;
 	case 'a':
 		tmp = sscanf(optarg, "%x:%x:%x:%x:%x:%x", &value[0],&value[1],&value[2],&value[3],&value[4],&value[5]);
-		
 		printf("Read MAC, num:%d\n",tmp);
 		if (6 == tmp ){
 			printf("Read MAC, entering loop\n");
@@ -562,7 +561,7 @@ int main(int argc, char *argv[]) {
     args->GI = GI;
     args->npackets = npackets;
     args->interval = interval;
-    args->RA_MAC = RA_MAC;
+    memcpy(args->RA_MAC, RA_MAC);
     args->TA_MAC = TA_MAC;
     args->session_id = session_id;
     args->ttime = ttime;
