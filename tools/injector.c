@@ -216,9 +216,12 @@ void *estimate_csi(void *vargp){
 	if (flag == 0){
 		//1) send CSI to the server
 		cnt = read_csi_buf(buf_addr,fd,BUFSIZE);
-		if(cnt){
-		    record_status(buf_addr, cnt, csi_status);
+		printf("cnt: %d \n", cnt);
 
+		if(cnt){
+		    /*	
+		    record_status(buf_addr, cnt, csi_status);
+		    printf("cnt: %d \n", cnt);
 		    printf("Recv %dth msg with rate: 0x%02x | payload len: %d\n",total_msg_cnt,csi_status->rate,csi_status->payload_len);
 		    printf("========  Bsic Information of the Transmission ==========\n");
 		    printf("csi_len= %d |",csi_status->csi_len);
@@ -231,7 +234,7 @@ void *estimate_csi(void *vargp){
 		    printf("rssi_1= %d  |",csi_status->rssi_1);
 		    printf("rssi_2= %d  |",csi_status->rssi_2);
 		    printf("mac_addr= %x\n",csi_status->mac_addr);
-
+		    */
 		    total_msg_cnt += 1;
 		    data_len        = cnt;
 		    data_len_local  = data_len;
