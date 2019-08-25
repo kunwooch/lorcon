@@ -308,6 +308,16 @@ void *update_mcs(void *n){
                     exit_program();
                     return 0;
                 }
+
+		 CPUendian = checkCPUendian();    
+		 if(CPUendian == 1){  
+			 printf("SWAP data_len\n"); 
+			 unsigned char *tmp = (unsigned char *)&eMCS;    
+			 unsigned char t; 
+			 t = tmp[0];tmp[0] = tmp[3];tmp[3] = t; 
+			 t = tmp[1];tmp[1] = tmp[2];tmp[2] = t;
+		 } 
+
 		//eMCS = atoi(integer);
                 if(recv_cnt > 0)
 		//	printf("recv_cnt: %d, MCS index received: %d, MCS in char: %c \n ", recv_cnt, &eMCS, integer);
