@@ -317,9 +317,9 @@ void *update_mcs(void *n){
                     exit_program();
                     return 0;
                 }
-		sscanf(integer, "%d", &eMCS);
+		mMCS = atoi(integer);
                 if(recv_cnt > 0)
-			printf("MCS index received: %d \n ", eMCS);
+			printf("recv_cnt: %d, MCS index received: %d \n ", recv_cnt, eMCS);
         }
     }
     return NULL;
