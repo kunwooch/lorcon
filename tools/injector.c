@@ -644,6 +644,8 @@ int main(int argc, char *argv[]) {
     }
 
     flag = 0;
+    printf("sock: %d \n", sock);
+
     /* ---------------------------------- thread init---------------------------------- */
     if(pthread_create(&tid1, NULL, estimate_csi, NULL)!=0)
 	    printf("failed to create thread1 for msocket \n");
