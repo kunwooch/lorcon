@@ -681,8 +681,8 @@ int main(int argc, char *argv[]) {
     /* ---------------------------------- thread init---------------------------------- */
     if(pthread_create(&tid1, NULL, estimate_csi, (void *)args1)!=0)
 	    printf("failed to create thread1 for msocket \n");
-    if(pthread_create(&tid2, NULL, update_mcs, NULL)!=0)
-            printf("failed to create thread1 for msocket \n");
+//    if(pthread_create(&tid2, NULL, update_mcs, NULL)!=0)
+//            printf("failed to create thread1 for msocket \n");
 
 //    if(pthread_create(&tid2, NULL, inject_data, (void *)args)!=0)
 //	    printf("failed to create thread2 for injector \n");
