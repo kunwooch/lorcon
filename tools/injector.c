@@ -80,6 +80,17 @@ struct sockaddr_in pin;
 
 unsigned int MCS = 0;
 
+// declaration of thread condition variables
+pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER;
+pthread_cond_t cond2 = PTHREAD_COND_INITIALIZER;
+pthread_cond_t cond3 = PTHREAD_COND_INITIALIZER;
+
+// mutex which we are going to use aboid race condition
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+// gloabl variable which decides which waiting thread should be scheduled
+int done = 1;
+
 struct estimator_args {
     char   *hostname;
     int    port;
@@ -205,7 +216,7 @@ bool isvalueinarray(int val, int *arr, int size){
     return false;
 }
 
-void *estimate_csi(void *_args){
+void *estimate_csi(void *n){
     int    total_msg_cnt,cnt;
     int    data_len,data_len_local;
     int    byte_cnt,send_cnt,recv_cnt;
@@ -216,7 +227,7 @@ void *estimate_csi(void *_args){
     flag = 0;
     quit = 0;
     printf("# Receiving data! Press Ctrl+c to quit!\n");
-    while(quit == 0){
+    while(quit == 0){    
         if (quit == 1){
             exit_program();
             return 0;
@@ -268,15 +279,24 @@ void *estimate_csi(void *_args){
 		    	}
 		     }
 		}
+		recv_cnt = recv(sock, &eMCS, sizeof(eMCS),0);
+		printf("recv_cnt: %d \n", recv_cnt);
+		if(recv_cnt == -1){
+			perror("recv");    
+			exit_program();
+			return 0;
+		}
+		if(recv_cnt > 0)
+			printf("MCS index received: %d \n ", eMCS); 	
 	}
     }
     return NULL;
 }
 
-void *update_mcs(void *_args){
+void *update_mcs(void *n){
     int    eMCS;
     int    recv_cnt;
-    printf("update_mcs thread ready \n");
+    printf("update_mcs thread ready 222\n");
 
     flag = 0;
     quit = 0;
@@ -289,13 +309,14 @@ void *update_mcs(void *_args){
         if (flag == 0){
                 //2) receive and update the MCS index
                 recv_cnt = recv(sock, &eMCS, sizeof(eMCS),0);
-		printf("recv_cnt: %d \n", recv_cnt);
+		printf("recv_cnt2222: %d \n", recv_cnt);
                 if(recv_cnt == -1){
-                    perror("recv");
+                    perror("recv222");
                     exit_program();
                     return 0;
                 }
-                printf("MCS index received: %d \n ", eMCS);
+                if(recv_cnt > 0)
+			printf("MCS index received222: %d \n ", eMCS);
         }
     }
     return NULL;
@@ -413,9 +434,6 @@ int main(int argc, char *argv[]) {
     /* ---------------------------------- socket variable init---------------------------------- */   
     char   *hostname = NULL;
     int    port;
-/*    struct hostent *hp;
-    struct sockaddr_in pin;
-*/   
     int    ret;
 
     fd_set readfds,writefds,exceptfds;
@@ -677,14 +695,24 @@ int main(int argc, char *argv[]) {
     args->ttime = ttime;
 */
     /* ---------------------------------- thread init---------------------------------- */
-    if(pthread_create(&tid1, NULL, estimate_csi, NULL)!=0)
+    int n1 = 1, n2 = 2, n3 = 3;
+    if(pthread_create(&tid1, NULL, estimate_csi, (void *)&n1)!=0)
 	    printf("failed to create thread1 for msocket \n");
-    if(pthread_create(&tid2, NULL, update_mcs, NULL)!=0)
+    else 
+	    printf("estimate_csi thread successfully created \n");
+
+    if(pthread_create(&tid2, NULL, update_mcs, (void *)&n2)!=0)
             printf("failed to create thread1 for msocket \n");
+    else
+	    printf("update_mcs thread successfully created \n");
 
 //    if(pthread_create(&tid2, NULL, inject_data, (void *)args)!=0)
 //	    printf("failed to create thread2 for injector \n");
 
+    pthread_join(tid2, NULL);
+    pthread_join(tid1, NULL);
+
+    while(1);
 
     printf("\n");
     // Close the interface
