@@ -75,6 +75,8 @@ FILE*  fp;
 COMPLEX csi_matrix[3][3][114];
 csi_struct*   csi_status;
 int flag;
+struct hostent *hp;
+struct sockaddr_in pin;
 
 unsigned int MCS = 0;
 
@@ -201,78 +203,18 @@ bool isvalueinarray(int val, int *arr, int size){
 }
 
 void *estimate_csi(void *_args){
-    struct hostent *hp;
-    struct sockaddr_in pin;
-    int    ret;
-
-    fd_set readfds,writefds,exceptfds;
-
-    FD_ZERO(&readfds);
-    FD_ZERO(&writefds);
-    FD_ZERO(&exceptfds);
-
-    u_int8_t    tmp_int8;
-    u_int16_t   buf_len;
-
-    unsigned int    src_addr;
-
-    struct estimator_args *args = (struct estimator_args *) _args;
+/*    struct estimator_args *args = (struct estimator_args *) _args;
 
     char   *hostname = args->hostname;
     int port = args->port;
-
-    /* ---------------------------------- client_main init---------------------------------- */
-    fd = open_csi_device();
-    if (fd < 0){
-        perror("Failed to open the CSI device...");
-        return 0;
-    }
-
-    memset(&pin,0,sizeof(pin));
-    pin.sin_family = AF_INET;
-    pin.sin_port   = htons(port);
-
-    if ((hp = gethostbyname(hostname))!= NULL){
-        pin.sin_addr.s_addr = ((struct in_addr *)hp->h_addr)->s_addr;
-    }else{
-        pin.sin_addr.s_addr = inet_addr(hostname);
-    }
-
-    // opening a socket and check whether it is successfully opened
-    if((sock = (int)socket(AF_INET,SOCK_STREAM,0)) == -1){
-        perror("socket");
-        return 0;
-    }
-    printf("Waiting for the connection!\n");
-    // connect to the server
-    ret = connect(sock,(const struct sockaddr *)&pin,sizeof(pin));
-    if(ret == -1){
-        perror("connect");
-        exit_program();
-        return 0;
-    }
-    printf("Connection with server is built!\n");
-
-    FD_SET(sock,&readfds);
-    FD_SET(sock,&writefds);
-    FD_SET(sock,&exceptfds);
-
-    if (signal(SIGINT, sig_handler) == SIG_ERR){
-        printf("Can't catch SIGINT\n");
-        exit_program();
-        return 0;
-    }
-
-    flag = 0;
-    printf("sock: %d \n", sock);
-
+*/
     int    total_msg_cnt,cnt;
     int    data_len,data_len_local;
     int    byte_cnt,send_cnt,recv_cnt;
     int    CPUendian;
     int    eMCS;
     int    mac_array[] = {45, 55, 207, 122, 221, 241, 25, 61, 139};
-    csi_status = (csi_struct*)malloc(sizeof(csi_struct));
+//    csi_status = (csi_struct*)malloc(sizeof(csi_struct));
 
     flag = 0;
     quit = 0;
@@ -474,6 +416,7 @@ int main(int argc, char *argv[]) {
     int    port;
 /*    struct hostent *hp;
     struct sockaddr_in pin;
+*/   
     int    ret;
 
     fd_set readfds,writefds,exceptfds;
@@ -486,7 +429,7 @@ int main(int argc, char *argv[]) {
     u_int16_t   buf_len;
 
     unsigned int    src_addr;
-*/
+
     /* ---------------------------------- injector variable init---------------------------------- */
 
     char *interface = NULL;
@@ -635,6 +578,51 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    /* ---------------------------------- client_main init---------------------------------- */
+    fd = open_csi_device();
+    if (fd < 0){
+        perror("Failed to open the CSI device...");
+        return 0;
+    }
+
+    memset(&pin,0,sizeof(pin));
+    pin.sin_family = AF_INET;
+    pin.sin_port   = htons(port);
+
+    if ((hp = gethostbyname(hostname))!= NULL){
+        pin.sin_addr.s_addr = ((struct in_addr *)hp->h_addr)->s_addr;
+    }else{
+        pin.sin_addr.s_addr = inet_addr(hostname);
+    }
+
+    // opening a socket and check whether it is successfully opened
+    if((sock = (int)socket(AF_INET,SOCK_STREAM,0)) == -1){
+        perror("socket");
+        return 0;
+    }
+    printf("Waiting for the connection!\n");
+    // connect to the server
+    ret = connect(sock,(const struct sockaddr *)&pin,sizeof(pin));
+    if(ret == -1){
+        perror("connect");
+        exit_program();
+        return 0;
+    }
+    printf("Connection with server is built!\n");
+
+    FD_SET(sock,&readfds);
+    FD_SET(sock,&writefds);
+    FD_SET(sock,&exceptfds);
+
+    if (signal(SIGINT, sig_handler) == SIG_ERR){
+        printf("Can't catch SIGINT\n");
+        exit_program();
+        return 0;
+    }
+
+    flag = 0;
+    printf("sock: %d \n", sock);
+
     /* ---------------------------------- injector init---------------------------------- */
     fread(&session_id, 4, 1, urandom);
     fclose(urandom);
@@ -705,8 +693,8 @@ int main(int argc, char *argv[]) {
     lorcon_close(context);
     // Free the LORCON Context
     lorcon_free(context);	
-    exit_program();
-    free(csi_status);
+//    exit_program();
+//    free(csi_status);
     free(args1);
     pthread_exit(NULL);    
     return 0;
