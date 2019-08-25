@@ -279,15 +279,6 @@ void *estimate_csi(void *n){
 		    	}
 		     }
 		}
-		//recv_cnt = recv(sock, &eMCS, sizeof(eMCS),0);
-		//printf("recv_cnt: %d \n", recv_cnt);
-		//if(recv_cnt == -1){
-		//	perror("recv");    
-		//	exit_program();
-		//	return 0;
-		//}
-		//if(recv_cnt > 0)
-		//	printf("MCS index received: %d \n ", eMCS); 	
 	}
     }
     return NULL;
@@ -319,7 +310,7 @@ void *update_mcs(void *n){
                 }
 		eMCS = atoi(integer);
                 if(recv_cnt > 0)
-			printf("recv_cnt: %d, MCS index received: %d \n ", recv_cnt, eMCS);
+			printf("recv_cnt: %d, MCS index received: %d, MCS in char: %d \n ", recv_cnt, eMCS, integer);
         }
     }
     return NULL;
