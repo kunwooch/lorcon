@@ -288,6 +288,7 @@ void *estimate_csi(void *n){
 void *update_mcs(void *n){
     int    eMCS;
     int    recv_cnt;
+    int    CPUendian;
     //printf("update_mcs thread ready\n");
 
     flag = 0;
