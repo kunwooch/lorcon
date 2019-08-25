@@ -309,8 +309,8 @@ void *update_mcs(void *n){
         if (flag == 0){
                 //2) receive and update the MCS index
                 //recv_cnt = recv(sock, (unsigned char *)&eMCS, sizeof(eMCS),0);
-		char integer[2];
-		recv_cnt = recv(sock,integer,2,0);
+		char integer[4];
+		recv_cnt = recv(sock,integer,4,0);
 		//printf("recv_cnt: %d \n", recv_cnt);
                 if(recv_cnt == -1){
                     perror("recv");
