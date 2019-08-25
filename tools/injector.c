@@ -276,6 +276,7 @@ void *estimate_csi(void *_args){
 void *update_mcs(void *_args){
     int    eMCS;
     int    recv_cnt;
+    printf("update_mcs thread ready \n");
 
     flag = 0;
     quit = 0;
@@ -288,6 +289,7 @@ void *update_mcs(void *_args){
         if (flag == 0){
                 //2) receive and update the MCS index
                 recv_cnt = recv(sock, &eMCS, sizeof(eMCS),0);
+		printf("recv_cnt: %d \n", recv_cnt);
                 if(recv_cnt == -1){
                     perror("recv");
                     exit_program();
