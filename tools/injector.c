@@ -201,7 +201,7 @@ void *estimate_csi(void *vargp){
     int    byte_cnt,send_cnt,recv_cnt;
     int    CPUendian;
     int    eMCS;
-    int    mac_array[] = {45, 55, 207, 122, 221, 11, 241, 25, 61};
+    int    mac_array[] = {45, 55, 207, 122, 221, 241, 25, 61, 139};
 
     flag = 0;
     quit = 0;
@@ -260,13 +260,13 @@ void *estimate_csi(void *vargp){
 	
         	//2) receive and update the MCS index
 		// recv MCS index
-		recv_cnt = recv(sock, &eMCS, sizeof(eMCS),0);
-		if(recv_cnt == -1){
-		    perror("recv");
-		    exit_program();
-		    return 0;
-		}
-		printf("MCS index received: %d \n ", eMCS);
+		//recv_cnt = recv(sock, &eMCS, sizeof(eMCS),0);
+		//if(recv_cnt == -1){
+		//    perror("recv");
+		//    exit_program();
+		//    return 0;
+		//}
+		//printf("MCS index received: %d \n ", eMCS);
 	}
     }
     return NULL;
@@ -377,6 +377,7 @@ void *inject_data(void *_args){
     }
 }
 
+>> 
 int main(int argc, char *argv[]) {
     pthread_t tid1, tid2;
 
@@ -484,7 +485,7 @@ int main(int argc, char *argv[]) {
                 }
                 break;
 	case 't':
-                if (sscanf(optarg, "%u", &ttime) != 0){
+                if (sscanf(optarg, "%u", &ttime) != 1){
                     printf("ERROR: Unable to parse transmission delay");
                     return -1;
                 }
