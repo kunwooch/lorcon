@@ -183,11 +183,11 @@ void exit_program(){
 int checkCPUendian(){
     int num = 1;
     if(*((char*)&num) == 1){
-        //printf("Little-endian\n");
+        printf("Little-endian\n");
         return 0;
     }
     else{
-        //printf("Big-endian\n");
+        printf("Big-endian\n");
         return 1;
     }
 }
@@ -244,6 +244,7 @@ void *estimate_csi(void *n){
 
 		    CPUendian = checkCPUendian();
 		    if(CPUendian == 1){
+			printf("SWAP data_len\n");
 			unsigned char *tmp = (unsigned char *)&data_len;
 			unsigned char t;
 			t = tmp[0];tmp[0] = tmp[3];tmp[3] = t;
@@ -299,19 +300,19 @@ void *update_mcs(void *n){
 
         if (flag == 0){
                 //2) receive and update the MCS index
-                //recv_cnt = recv(sock, (unsigned char *)&eMCS, sizeof(eMCS),0);
-		char integer[4];
-		recv_cnt = recv(sock,integer,4,0);
-		//printf("recv_cnt: %d \n", recv_cnt);
+		/*char integer[4];
+		recv_cnt = recv(sock,integer,4,0);*/
+		recv_cnt = recv(sock, &eMCS, sizeof(eMCS), 0);
                 if(recv_cnt == -1){
                     perror("recv");
                     exit_program();
                     return 0;
                 }
-		eMCS = atoi(integer);
+		//eMCS = atoi(integer);
                 if(recv_cnt > 0)
-			printf("recv_cnt: %d, MCS index received: %d, MCS in char: %c \n ", recv_cnt, &eMCS, integer);
-        }
+		//	printf("recv_cnt: %d, MCS index received: %d, MCS in char: %c \n ", recv_cnt, &eMCS, integer);
+			printf("recv_cnt: %d, MCS index received: %d \n ", recv_cnt, eMCS);
+	}
     }
     return NULL;
 }
