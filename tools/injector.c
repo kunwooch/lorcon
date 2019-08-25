@@ -308,8 +308,8 @@ void *update_mcs(void *n){
 
         if (flag == 0){
                 //2) receive and update the MCS index
-                recv_cnt = recv(sock, &eMCS, sizeof(eMCS),0);
-		printf("recv_cnt: %d \n", recv_cnt);
+                recv_cnt = recv(sock, eMCS, sizeof(eMCS),0);
+		//printf("recv_cnt: %d \n", recv_cnt);
                 if(recv_cnt == -1){
                     perror("recv");
                     exit_program();
@@ -696,15 +696,21 @@ int main(int argc, char *argv[]) {
 */
     /* ---------------------------------- thread init---------------------------------- */
     int n1 = 1, n2 = 2, n3 = 3;
+
+    if(pthread_create(&tid2, NULL, update_mcs, (void *)&n2)!=0)
+	    printf("failed to create thread1 for msocket \n");
+    else
+	    printf("update_mcs thread successfully created \n");
+
     if(pthread_create(&tid1, NULL, estimate_csi, (void *)&n1)!=0)
 	    printf("failed to create thread1 for msocket \n");
     else 
 	    printf("estimate_csi thread successfully created \n");
 
-    if(pthread_create(&tid2, NULL, update_mcs, (void *)&n2)!=0)
-            printf("failed to create thread1 for msocket \n");
-    else
-	    printf("update_mcs thread successfully created \n");
+//    if(pthread_create(&tid2, NULL, update_mcs, (void *)&n2)!=0)
+//            printf("failed to create thread1 for msocket \n");
+//    else
+//	    printf("update_mcs thread successfully created \n");
 
 //    if(pthread_create(&tid2, NULL, inject_data, (void *)args)!=0)
 //	    printf("failed to create thread2 for injector \n");
