@@ -81,7 +81,7 @@ unsigned int MCS = 0;
 struct estimator_args {
     char   *hostname = NULL;
     int    port;
-}
+};
 
 struct injector_args {
     lorcon_t *context;
@@ -174,6 +174,8 @@ int checkCPUendian(){
         //printf("Big-endian\n");
         return 1;
     }
+Username for 'https://github.com': kunwooch
+Password for 'https://kunwooch@github.com': 
 }
 
 void usage(char *argv[]) {
@@ -288,7 +290,7 @@ void *estimate_csi(void *_args){
 		cnt = read_csi_buf(buf_addr,fd,BUFSIZE);
 		printf("cnt: %d \n", cnt);
 
-		if(cnt){
+		if(cnt==1){
 		    /*	
 		    record_status(buf_addr, cnt, csi_status);
 		    printf("cnt: %d \n", cnt);
