@@ -310,7 +310,7 @@ void *update_mcs(void *n){
                 }
 		eMCS = atoi(integer);
                 if(recv_cnt > 0)
-			printf("recv_cnt: %d, MCS index received: %d, MCS in char: %d \n ", recv_cnt, eMCS, integer);
+			printf("recv_cnt: %d, MCS index received: %d, MCS in char: %c \n ", recv_cnt, &eMCS, integer);
         }
     }
     return NULL;
