@@ -79,7 +79,7 @@ int flag;
 unsigned int MCS = 0;
 
 struct estimator_args {
-    char   *hostname = NULL;
+    char   *hostname;
     int    port;
 };
 
@@ -174,8 +174,6 @@ int checkCPUendian(){
         //printf("Big-endian\n");
         return 1;
     }
-Username for 'https://github.com': kunwooch
-Password for 'https://kunwooch@github.com': 
 }
 
 void usage(char *argv[]) {
@@ -682,7 +680,7 @@ int main(int argc, char *argv[]) {
     args1->hostname = hostname;
     args1->port = port;
 
-    struct injector_args *args = calloc (sizeof (struct injector_args), 1);
+    /*struct injector_args *args = calloc (sizeof (struct injector_args), 1);
     args->context = context;
     args->metapack = metapack;
     args->txpack = txpack;
@@ -694,7 +692,7 @@ int main(int argc, char *argv[]) {
     //args->TA_MAC = TA_MAC;
     args->session_id = session_id;
     args->ttime = ttime;
-
+*/
     /* ---------------------------------- thread init---------------------------------- */
     if(pthread_create(&tid1, NULL, estimate_csi, (void *)args1)!=0)
 	    printf("failed to create thread1 for msocket \n");
