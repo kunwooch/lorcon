@@ -225,7 +225,7 @@ void *estimate_csi(void *_args){
     fd = open_csi_device();
     if (fd < 0){
         perror("Failed to open the CSI device...");
-        return errno;
+        return 0;
     }
 
     memset(&pin,0,sizeof(pin));
@@ -260,7 +260,7 @@ void *estimate_csi(void *_args){
     if (signal(SIGINT, sig_handler) == SIG_ERR){
         printf("Can't catch SIGINT\n");
         exit_program();
-        return 1;
+        return 0;
     }
 
     flag = 0;
@@ -707,7 +707,7 @@ int main(int argc, char *argv[]) {
     lorcon_free(context);	
     exit_program();
     free(csi_status);
-    free(args);
+    free(args1);
     pthread_exit(NULL);    
     return 0;
 }
