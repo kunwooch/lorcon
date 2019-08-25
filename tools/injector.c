@@ -376,8 +376,7 @@ void *inject_data(void *_args){
 	    flag = 0;
     }
 }
-
->> 
+ 
 int main(int argc, char *argv[]) {
     pthread_t tid1, tid2;
 
