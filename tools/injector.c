@@ -202,6 +202,7 @@ void *estimate_csi(void *vargp){
     int    CPUendian;
     int    eMCS;
     int    mac_array[] = {45, 55, 207, 122, 221, 241, 25, 61, 139};
+    csi_status = (csi_struct*)malloc(sizeof(csi_struct));
 
     flag = 0;
     quit = 0;
@@ -216,6 +217,21 @@ void *estimate_csi(void *vargp){
 		//1) send CSI to the server
 		cnt = read_csi_buf(buf_addr,fd,BUFSIZE);
 		if(cnt){
+		    record_status(buf_addr, cnt, csi_status);
+
+		    printf("Recv %dth msg with rate: 0x%02x | payload len: %d\n",total_msg_cnt,csi_status->rate,csi_status->payload_len);
+		    printf("========  Bsic Information of the Transmission ==========\n");
+		    printf("csi_len= %d |",csi_status->csi_len);
+		    printf("chanBW= %d   |",csi_status->chanBW);
+		    printf("num_tones= %d  |",csi_status->num_tones);
+		    printf("nr= %d  |",csi_status->nr);
+		    printf("nc= %d\n",csi_status->nc);
+		    printf("rssi= %d  |",csi_status->rssi);
+		    printf("rssi_0= %d  |",csi_status->rssi_0);
+		    printf("rssi_1= %d  |",csi_status->rssi_1);
+		    printf("rssi_2= %d  |",csi_status->rssi_2);
+		    printf("mac_addr= %x\n",csi_status->mac_addr);
+
 		    total_msg_cnt += 1;
 		    data_len        = cnt;
 		    data_len_local  = data_len;
@@ -600,8 +616,6 @@ int main(int argc, char *argv[]) {
     args->session_id = session_id;
     args->ttime = ttime;
     /* ---------------------------------- client_main init---------------------------------- */
-    csi_status = (csi_struct*)malloc(sizeof(csi_struct));
-
     fd = open_csi_device();
     if (fd < 0){
         perror("Failed to open the CSI device...");
