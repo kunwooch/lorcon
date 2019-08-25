@@ -279,15 +279,15 @@ void *estimate_csi(void *n){
 		    	}
 		     }
 		}
-		recv_cnt = recv(sock, &eMCS, sizeof(eMCS),0);
-		printf("recv_cnt: %d \n", recv_cnt);
-		if(recv_cnt == -1){
-			perror("recv");    
-			exit_program();
-			return 0;
-		}
-		if(recv_cnt > 0)
-			printf("MCS index received: %d \n ", eMCS); 	
+		//recv_cnt = recv(sock, &eMCS, sizeof(eMCS),0);
+		//printf("recv_cnt: %d \n", recv_cnt);
+		//if(recv_cnt == -1){
+		//	perror("recv");    
+		//	exit_program();
+		//	return 0;
+		//}
+		//if(recv_cnt > 0)
+		//	printf("MCS index received: %d \n ", eMCS); 	
 	}
     }
     return NULL;
@@ -296,7 +296,7 @@ void *estimate_csi(void *n){
 void *update_mcs(void *n){
     int    eMCS;
     int    recv_cnt;
-    printf("update_mcs thread ready 222\n");
+    //printf("update_mcs thread ready\n");
 
     flag = 0;
     quit = 0;
@@ -309,14 +309,14 @@ void *update_mcs(void *n){
         if (flag == 0){
                 //2) receive and update the MCS index
                 recv_cnt = recv(sock, &eMCS, sizeof(eMCS),0);
-		printf("recv_cnt2222: %d \n", recv_cnt);
+		printf("recv_cnt: %d \n", recv_cnt);
                 if(recv_cnt == -1){
-                    perror("recv222");
+                    perror("recv");
                     exit_program();
                     return 0;
                 }
                 if(recv_cnt > 0)
-			printf("MCS index received222: %d \n ", eMCS);
+			printf("MCS index received: %d \n ", eMCS);
         }
     }
     return NULL;
@@ -709,10 +709,10 @@ int main(int argc, char *argv[]) {
 //    if(pthread_create(&tid2, NULL, inject_data, (void *)args)!=0)
 //	    printf("failed to create thread2 for injector \n");
 
-    pthread_join(tid2, NULL);
-    pthread_join(tid1, NULL);
+//    pthread_join(tid2, NULL);
+//    pthread_join(tid1, NULL);
 
-    while(1);
+//    while(1);
 
     printf("\n");
     // Close the interface
