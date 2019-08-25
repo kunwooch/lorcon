@@ -276,6 +276,7 @@ void *estimate_csi(void *_args){
 
 void *update_mcs(void *_args){
     int    eMCS;
+    int    recv_cnt;
 
     flag = 0;
     quit = 0;
