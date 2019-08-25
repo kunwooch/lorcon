@@ -212,7 +212,6 @@ void *estimate_csi(void *_args){
     int    CPUendian;
     int    eMCS;
     int    mac_array[] = {45, 55, 207, 122, 221, 241, 25, 61, 139};
-//    csi_status = (csi_struct*)malloc(sizeof(csi_struct));
 
     flag = 0;
     quit = 0;
@@ -662,10 +661,6 @@ int main(int argc, char *argv[]) {
     printf("[+]\t Using channel: %d flags %d\n", channel, ch_flags);
     printf("\n[.]\tMCS %u %s %s\n\n", MCS, BW ? "40MHz" : "20MHz", GI ? "short-gi" : "long-gi");
 
-    struct estimator_args *args1 = calloc (sizeof (struct estimator_args), 1);
-    args1->hostname = hostname;
-    args1->port = port;
-
     /*struct injector_args *args = calloc (sizeof (struct injector_args), 1);
     args->context = context;
     args->metapack = metapack;
@@ -680,10 +675,10 @@ int main(int argc, char *argv[]) {
     args->ttime = ttime;
 */
     /* ---------------------------------- thread init---------------------------------- */
-    if(pthread_create(&tid1, NULL, estimate_csi, (void *)args1)!=0)
+    if(pthread_create(&tid1, NULL, estimate_csi, NULL)!=0)
 	    printf("failed to create thread1 for msocket \n");
-//    if(pthread_create(&tid2, NULL, update_mcs, NULL)!=0)
-//            printf("failed to create thread1 for msocket \n");
+    if(pthread_create(&tid2, NULL, update_mcs, NULL)!=0)
+            printf("failed to create thread1 for msocket \n");
 
 //    if(pthread_create(&tid2, NULL, inject_data, (void *)args)!=0)
 //	    printf("failed to create thread2 for injector \n");
@@ -696,7 +691,7 @@ int main(int argc, char *argv[]) {
     lorcon_free(context);	
 //    exit_program();
 //    free(csi_status);
-    free(args1);
+//    free(args1);
     pthread_exit(NULL);    
     return 0;
 }
