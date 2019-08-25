@@ -118,6 +118,9 @@ int read_csi_buf(unsigned char* buf_addr,int fd, int buf_size){
      *           2, time out
      */
     cnt = read(fd,buf_addr,buf_size);
+    printf("cnt: %d \n", cnt);
+    if(cnt < 0)
+	return 0;
     if(cnt)
         return cnt;
     else
@@ -203,11 +206,6 @@ bool isvalueinarray(int val, int *arr, int size){
 }
 
 void *estimate_csi(void *_args){
-/*    struct estimator_args *args = (struct estimator_args *) _args;
-
-    char   *hostname = args->hostname;
-    int port = args->port;
-*/
     int    total_msg_cnt,cnt;
     int    data_len,data_len_local;
     int    byte_cnt,send_cnt,recv_cnt;
@@ -228,25 +226,8 @@ void *estimate_csi(void *_args){
 	if (flag == 0){
 		//1) send CSI to the server
 		cnt = read_csi_buf(buf_addr,fd,BUFSIZE);
-		printf("cnt: %d \n", cnt);
 
-		if(cnt==1){
-		    /*	
-		    record_status(buf_addr, cnt, csi_status);
-		    printf("cnt: %d \n", cnt);
-		    printf("Recv %dth msg with rate: 0x%02x | payload len: %d\n",total_msg_cnt,csi_status->rate,csi_status->payload_len);
-		    printf("========  Bsic Information of the Transmission ==========\n");
-		    printf("csi_len= %d |",csi_status->csi_len);
-		    printf("chanBW= %d   |",csi_status->chanBW);
-		    printf("num_tones= %d  |",csi_status->num_tones);
-		    printf("nr= %d  |",csi_status->nr);
-		    printf("nc= %d\n",csi_status->nc);
-		    printf("rssi= %d  |",csi_status->rssi);
-		    printf("rssi_0= %d  |",csi_status->rssi_0);
-		    printf("rssi_1= %d  |",csi_status->rssi_1);
-		    printf("rssi_2= %d  |",csi_status->rssi_2);
-		    printf("mac_addr= %x\n",csi_status->mac_addr);
-		    */
+		if(cnt){
 		    total_msg_cnt += 1;
 		    data_len        = cnt;
 		    data_len_local  = data_len;
@@ -288,20 +269,36 @@ void *estimate_csi(void *_args){
 		    	}
 		     }
 		}
-	
-        	//2) receive and update the MCS index
-		// recv MCS index
-		//recv_cnt = recv(sock, &eMCS, sizeof(eMCS),0);
-		//if(recv_cnt == -1){
-		//    perror("recv");
-		//    exit_program();
-		//    return 0;
-		//}
-		//printf("MCS index received: %d \n ", eMCS);
 	}
     }
     return NULL;
 }
+
+void *update_mcs(void *_args){
+    int    eMCS;
+
+    flag = 0;
+    quit = 0;
+    while(quit == 0){
+        if (quit == 1){
+            exit_program();
+            return 0;
+        }
+
+        if (flag == 0){
+                //2) receive and update the MCS index
+                recv_cnt = recv(sock, &eMCS, sizeof(eMCS),0);
+                if(recv_cnt == -1){
+                    perror("recv");
+                    exit_program();
+                    return 0;
+                }
+                printf("MCS index received: %d \n ", eMCS);
+        }
+    }
+    return NULL;
+}
+
 
 void *inject_data(void *_args){
     int i,tmp;
@@ -684,6 +681,9 @@ int main(int argc, char *argv[]) {
     /* ---------------------------------- thread init---------------------------------- */
     if(pthread_create(&tid1, NULL, estimate_csi, (void *)args1)!=0)
 	    printf("failed to create thread1 for msocket \n");
+    if(pthread_create(&tid2, NULL, update_mcs, NULL)!=0)
+            printf("failed to create thread1 for msocket \n");
+
 //    if(pthread_create(&tid2, NULL, inject_data, (void *)args)!=0)
 //	    printf("failed to create thread2 for injector \n");
 
