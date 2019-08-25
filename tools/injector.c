@@ -309,17 +309,17 @@ void *update_mcs(void *n){
         if (flag == 0){
                 //2) receive and update the MCS index
                 //recv_cnt = recv(sock, (unsigned char *)&eMCS, sizeof(eMCS),0);
-		char integer[4];
-		recv_cnt = recv(sock,integer,4,0);
+		char integer[2];
+		recv_cnt = recv(sock,integer,2,0);
 		//printf("recv_cnt: %d \n", recv_cnt);
                 if(recv_cnt == -1){
                     perror("recv");
                     exit_program();
                     return 0;
                 }
-		//int mcs = eMCS;
+		sscanf(integer, "%d", &eMCS);
                 if(recv_cnt > 0)
-			printf("MCS index received: %s \n ", integer);
+			printf("MCS index received: %d \n ", eMCS);
         }
     }
     return NULL;
