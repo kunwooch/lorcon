@@ -91,11 +91,6 @@ pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 // gloabl variable which decides which waiting thread should be scheduled
 int done = 1;
 
-struct estimator_args {
-    char   *hostname;
-    int    port;
-};
-
 struct injector_args {
     lorcon_t *context;
     lcpa_metapack_t *metapack;
@@ -183,11 +178,11 @@ void exit_program(){
 int checkCPUendian(){
     int num = 1;
     if(*((char*)&num) == 1){
-        printf("Little-endian\n");
+//        printf("Little-endian\n");
         return 0;
     }
     else{
-        printf("Big-endian\n");
+//        printf("Big-endian\n");
         return 1;
     }
 }
@@ -244,7 +239,7 @@ void *estimate_csi(void *n){
 
 		    CPUendian = checkCPUendian();
 		    if(CPUendian == 1){
-			printf("SWAP data_len\n");
+			//printf("SWAP data_len\n");
 			unsigned char *tmp = (unsigned char *)&data_len;
 			unsigned char t;
 			t = tmp[0];tmp[0] = tmp[3];tmp[3] = t;
@@ -301,8 +296,6 @@ void *update_mcs(void *n){
 
         if (flag == 0){
                 //2) receive and update the MCS index
-		/*char integer[4];
-		recv_cnt = recv(sock,integer,4,0);*/
 		recv_cnt = recv(sock, &eMCS, sizeof(eMCS), 0);
                 if(recv_cnt == -1){
                     perror("recv");
@@ -312,17 +305,16 @@ void *update_mcs(void *n){
 
 		 CPUendian = checkCPUendian();    
 		 if(CPUendian == 1){  
-			 printf("SWAP data_len\n"); 
+			 //printf("SWAP data_len\n"); 
 			 unsigned char *tmp = (unsigned char *)&eMCS;    
 			 unsigned char t; 
 			 t = tmp[0];tmp[0] = tmp[3];tmp[3] = t; 
 			 t = tmp[1];tmp[1] = tmp[2];tmp[2] = t;
 		 } 
 
-		//eMCS = atoi(integer);
                 if(recv_cnt > 0)
-		//	printf("recv_cnt: %d, MCS index received: %d, MCS in char: %c \n ", recv_cnt, &eMCS, integer);
 			printf("recv_cnt: %d, MCS index received: %d \n ", recv_cnt, eMCS);
+			MCS = eMCS;
 	}
     }
     return NULL;
