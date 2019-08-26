@@ -361,13 +361,11 @@ void *inject_data(void *_args){
     int GI = args->GI;
     unsigned int interval = args->interval;
     unsigned int npackets = args->npackets;
-    //uint8_t RA_MAC[6] = args->RA_MAC;
-    //uint8_t *TA_MAC = args->TA_MAC;
     uint32_t session_id = args->session_id;
     unsigned int ttime = args->ttime;
 
     while (1){
-	    sleep(ttime);
+	    sleep(ttime*60);
 	    //1) disable thread 1 that recv CSI and transfer CSI with the server
 	    flag = 1;
 
@@ -427,7 +425,7 @@ void *inject_data(void *_args){
 }
  
 int main(int argc, char *argv[]) {
-    pthread_t tid1, tid2;
+    pthread_t tid1, tid2, tid3;
 
     /* ---------------------------------- socket variable init---------------------------------- */   
     char   *hostname = NULL;
@@ -442,8 +440,6 @@ int main(int argc, char *argv[]) {
 
     u_int8_t    tmp_int8;
     u_int16_t   buf_len;
-
-    unsigned int    src_addr;
 
     /* ---------------------------------- injector variable init---------------------------------- */
 
@@ -636,7 +632,7 @@ int main(int argc, char *argv[]) {
     }
 
     flag = 0;
-    printf("sock: %d \n", sock);
+    //printf("sock: %d \n", sock);
 
     /* ---------------------------------- injector init---------------------------------- */
     fread(&session_id, 4, 1, urandom);
@@ -679,7 +675,7 @@ int main(int argc, char *argv[]) {
     printf("[+]\t Using channel: %d flags %d\n", channel, ch_flags);
     printf("\n[.]\tMCS %u %s %s\n\n", MCS, BW ? "40MHz" : "20MHz", GI ? "short-gi" : "long-gi");
 
-    /*struct injector_args *args = calloc (sizeof (struct injector_args), 1);
+    struct injector_args *args = calloc (sizeof (struct injector_args), 1);
     args->context = context;
     args->metapack = metapack;
     args->txpack = txpack;
@@ -687,11 +683,9 @@ int main(int argc, char *argv[]) {
     args->GI = GI;
     args->npackets = npackets;
     args->interval = interval;
-    //memcpy(args->RA_MAC, RA_MAC);
-    //args->TA_MAC = TA_MAC;
     args->session_id = session_id;
     args->ttime = ttime;
-*/
+
     /* ---------------------------------- thread init---------------------------------- */
     int n1 = 1, n2 = 2, n3 = 3;
 
@@ -705,9 +699,10 @@ int main(int argc, char *argv[]) {
     else 
 	    printf("estimate_csi thread successfully created \n");
 
-//    if(pthread_create(&tid2, NULL, inject_data, (void *)args)!=0)
-//	    printf("failed to create thread2 for injector \n");
-
+    if(pthread_create(&tid3, NULL, inject_data, (void *)args)!=0)
+	    printf("failed to create thread2 for injector \n");
+    else
+	    print("inject_data thread successfully created \n");
 //    pthread_join(tid2, NULL);
 //    pthread_join(tid1, NULL);
 
@@ -720,7 +715,7 @@ int main(int argc, char *argv[]) {
     lorcon_free(context);	
 //    exit_program();
 //    free(csi_status);
-//    free(args1);
+    free(args);
     pthread_exit(NULL);    
     return 0;
 }
