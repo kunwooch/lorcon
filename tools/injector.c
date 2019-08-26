@@ -124,7 +124,7 @@ int read_csi_buf(unsigned char* buf_addr,int fd, int buf_size){
      *           2, time out
      */
     cnt = read(fd,buf_addr,buf_size);
-    printf("cnt: %d \n", cnt);
+    //printf("cnt: %d \n", cnt);
     if(cnt < 0)
 	return 0;
     if(cnt)
@@ -250,10 +250,10 @@ void *estimate_csi(void *n){
                     u_int8_t mac_addr = buf_addr[csi_st_len + csi_len + 16 + 1];
 
 	            int mac_array_size = (int)(sizeof(mac_array)/sizeof(mac_array[0]));
-                    printf("mac_addr is: %d \n",mac_addr);
+                    printf("send_cnt: %d, mac_addr: %d \n", cnt, mac_addr);
 
                     if (isvalueinarray(mac_addr, mac_array, mac_array_size)){
-			printf("send CSI to the server \n");
+			//printf("send CSI to the server \n");
 		    	// send the count first
 		    	send_cnt  = send(sock,(unsigned char *)&data_len,sizeof(int),0);
 		    	if(send_cnt == -1){
@@ -313,7 +313,7 @@ void *update_mcs(void *n){
 		 } 
 
                 if(recv_cnt > 0)
-			printf("recv_cnt: %d, MCS index received: %d \n ", recv_cnt, eMCS);
+			printf("recv_cnt: %d, MCS index: %d \n ", recv_cnt, eMCS);
 			MCS = eMCS;
 	}
     }
@@ -704,11 +704,6 @@ int main(int argc, char *argv[]) {
 	    printf("failed to create thread1 for msocket \n");
     else 
 	    printf("estimate_csi thread successfully created \n");
-
-//    if(pthread_create(&tid2, NULL, update_mcs, (void *)&n2)!=0)
-//            printf("failed to create thread1 for msocket \n");
-//    else
-//	    printf("update_mcs thread successfully created \n");
 
 //    if(pthread_create(&tid2, NULL, inject_data, (void *)args)!=0)
 //	    printf("failed to create thread2 for injector \n");
