@@ -702,7 +702,7 @@ int main(int argc, char *argv[]) {
     if(pthread_create(&tid3, NULL, inject_data, (void *)args)!=0)
 	    printf("failed to create thread2 for injector \n");
     else
-	    print("inject_data thread successfully created \n");
+	    printf("inject_data thread successfully created \n");
 //    pthread_join(tid2, NULL);
 //    pthread_join(tid1, NULL);
 
