@@ -463,10 +463,11 @@ void *inject_data(void *_args){
 		    // convert the lorcon metapack to a lorcon packet for sending
 		    txpack = (lorcon_packet_t *) lorcon_packet_from_lcpa(context, metapack);
 		    lorcon_packet_set_mcs(txpack, 1, MCS, GI, BW);
-		    if (lorcon_inject(context,txpack) < 0 )
+		    if (lorcon_inject(context,txpack) < 0 ){
 			 perror("lorcon");
       		         exit_program(); 
 		         return 0;
+		    }
                     printf("check5");   
 		    usleep(interval);
 
