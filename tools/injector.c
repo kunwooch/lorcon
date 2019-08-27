@@ -370,19 +370,7 @@ void *inject_data(void *_args){
     // Session ID
     uint32_t session_id;
 
-    /*
-    struct injector_args *args = (struct injector_args *) _args;
-    lorcon_t *context = args->context;
-    lcpa_metapack_t *metapack = args->metapack;
-    lorcon_packet_t *txpack = args-> txpack;
-    int BW = args->BW;
-    int GI = args->GI;
-    unsigned int interval = args->interval;
-    unsigned int npackets = args->npackets;
-    uint32_t session_id = args->session_id;
-    unsigned int ttime = args->ttime;
-    */
-     /* ---------------------------------- injector init---------------------------------- */
+    /* ---------------------------------- injector init---------------------------------- */
     fread(&session_id, 4, 1, urandom);
     fclose(urandom); 
 
@@ -417,10 +405,16 @@ void *inject_data(void *_args){
     printf("[+]\t Using channel: %d flags %d\n", channel, ch_flags);    
     printf("\n[.]\tMCS %u %s %s\n\n", MCS, BW ? "40MHz" : "20MHz", GI ? "short-gi" : "long-gi");  
 
-    while (1){
+    while(quit == 0){
+	    if (quit == 1){
+		    exit_program(); 
+		    return 0;   
+	    } 
+
 	    sleep(ttime*60);
 	    //1) disable thread 1 that recv CSI and transfer CSI with the server
 	    flag = 1;
+            totalcount = 0;
 
 	    //2) inject data to AP based on the calculated MCS
 	    printf("--------------inject to other clients!--------------\n");
@@ -432,14 +426,14 @@ void *inject_data(void *_args){
 			    payload[2*i+1] = (count & 0xff00) >> 8;
 		    }
 		    memset(encoded_payload, 0, 14);
-		    printf("check1");
+		    printf("check1/n");
 		    // set mcs count
 		    encoded_payload[0] = MCS;
 		    if (GI)
 			encoded_payload[0] |= HT_FLAG_GI;
 		    if (BW)
 			encoded_payload[0] |= HT_FLAG_40;
-                    printf("check2");   
+                    printf("check2/n");   
 		    // set the location code
 		    encoded_payload[1] = lcode & 0xff;
 
@@ -448,7 +442,7 @@ void *inject_data(void *_args){
 		    *encoded_session = htonl(session_id);
 
 		    metapack = lcpa_init();
-                    printf("check3");   
+                    printf("check3/n");   
 		    // create timestamp
 		    gettimeofday(&time, NULL);
 		    timestamp = time.tv_sec * 1000000 + time.tv_usec;
@@ -459,7 +453,7 @@ void *inject_data(void *_args){
 		    lcpf_add_ie(metapack, 10, 14, encoded_payload);
 		    lcpf_add_ie(metapack, 11, 2*PAYLOAD_LEN, payload);
 		    lcpf_add_ie(metapack, 12, strlen((char *) payload_1), payload_1);
-                    printf("check4");   
+                    printf("check4/n");   
 		    // convert the lorcon metapack to a lorcon packet for sending
 		    txpack = (lorcon_packet_t *) lorcon_packet_from_lcpa(context, metapack);
 		    lorcon_packet_set_mcs(txpack, 1, MCS, GI, BW);
@@ -468,18 +462,17 @@ void *inject_data(void *_args){
       		         exit_program(); 
 		         return 0;
 		    }
-                    printf("check5");   
+                    printf("check5/n");   
 		    usleep(interval);
 
-		    printf("\033[K\r"); 
-		    printf("[+] Sent %d frames, MCS %d \n", totalcount, MCS);
 		    fflush(stdout);
 		    totalcount++;
-                    printf("check6");   
+                    printf("check6/n");   
 		    lcpa_free(metapack);
-		    printf("check7");   
+		    printf("check7/n");   
 		}
 	    flag = 0;
+	    printf("Sent %d frames, MCS %d \n", totalcount, MCS);    
     }
     lorcon_close(context);  
     // Free the LORCON Context 
