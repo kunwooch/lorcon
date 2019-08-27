@@ -78,49 +78,15 @@ int flag;
 struct hostent *hp;
 struct sockaddr_in pin;
 
-unsigned int MCS = 0;
-
-int i,tmp;  
-unsigned int count, totalcount;
-uint8_t fcflags = 3; 
-uint8_t fragement = 3;
-uint8_t sequence = 2; 
-unsigned int duration = 0;
-uint8_t encoded_payload[14];
-uint32_t *encoded_counter = (uint32_t *) (encoded_payload + 2);   
-uint32_t *encoded_max = (uint32_t *) (encoded_payload + 6);   
-uint32_t *encoded_session = (uint32_t *) (encoded_payload + 10);  
-uint8_t payload[2*PAYLOAD_LEN];  
-uint8_t payload_1[PAYLOAD_LEN];  
-uint64_t timestamp; 
-
 char *interface = NULL; 
-unsigned int lcode = 0;
+int channel, ch_flags;
+unsigned int MCS = 0;
+int BW = 0;           
+int GI = 0; 
 unsigned int npackets = 100;
-int value[6]; 
-int c;
-int channel, ch_flags;  
-lorcon_driver_t *drvlist, *driver;   
-lorcon_t *context;
-lcpa_metapack_t *metapack;
-lorcon_packet_t *txpack;  
-unsigned int interval = 1;  
-unsigned int ttime = 1;  
-int BW = 0; 
-int GI = 0;
-//uint8_t *dmac;    
-//uint8_t *bmac; 
-uint8_t RA_MAC[6];  
-//uint8_t *TA_MAC;  
-//uint8_t *DA_MAC;
-//uint8_t *BSSID_MAC;
-// Beacon Interva 
-int beacon_interval = 100; 
-// Capabilities 
-int capabilities = 0x0421;
-// Session ID
-uint32_t session_id; 
-FILE *urandom;    
+unsigned int ttime = 1;                                                                                           
+unsigned int interval = 1; 
+uint8_t RA_MAC[6];
 
 // declaration of thread condition variables
 pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER;
@@ -364,8 +330,7 @@ void *update_mcs(void *n){
 
 
 void *inject_data(void *_args){
-    struct timeval time;                                                                                             
-    /*int i,tmp;
+    int i,tmp;
     unsigned int count, totalcount;
     uint8_t fcflags = 3;
     uint8_t fragement = 3;
@@ -379,11 +344,10 @@ void *inject_data(void *_args){
     uint8_t payload_1[PAYLOAD_LEN];
     struct timeval time;
     uint64_t timestamp;
-    */
+    
     uint8_t *dmac = "\x04\xF0\x21\x32\xBD\xA5";
     uint8_t *bmac = "\x00\xDE\xAD\xBE\xEF\x00";
 
-    //uint8_t RA_MAC[6];
     RA_MAC[0] = 0x04;
     RA_MAC[1] =0xF0;
     RA_MAC[2] =0x21;
@@ -393,9 +357,27 @@ void *inject_data(void *_args){
     uint8_t *TA_MAC;
     uint8_t *DA_MAC = RA_MAC;
     uint8_t *BSSID_MAC = bmac;
+
+    unsigned int lcode = 0; 
+    lorcon_driver_t *drvlist, *driver; 
+    lorcon_t *context;  
+    lcpa_metapack_t *metapack;       
+    lorcon_packet_t *txpack;  
+
+    unsigned int lcode = 0;   
+    lorcon_driver_t *drvlist, *driver;   
+    lorcon_t *context; 
+    lcpa_metapack_t *metapack;
+    lorcon_packet_t *txpack; 
+  
+    int beacon_interval = 100; 
+    int capabilities = 0x0421;                    
+    // Session ID
+    uint32_t session_id;
+    FILE *urandom;
+
     /*
     struct injector_args *args = (struct injector_args *) _args;
-
     lorcon_t *context = args->context;
     lcpa_metapack_t *metapack = args->metapack;
     lorcon_packet_t *txpack = args-> txpack;
@@ -455,14 +437,14 @@ void *inject_data(void *_args){
 			    payload[2*i+1] = (count & 0xff00) >> 8;
 		    }
 		    memset(encoded_payload, 0, 14);
-
+		    printf("check1");
 		    // set mcs count
 		    encoded_payload[0] = MCS;
 		    if (GI)
 			encoded_payload[0] |= HT_FLAG_GI;
 		    if (BW)
 			encoded_payload[0] |= HT_FLAG_40;
-
+                    printf("check2");   
 		    // set the location code
 		    encoded_payload[1] = lcode & 0xff;
 
@@ -471,7 +453,7 @@ void *inject_data(void *_args){
 		    *encoded_session = htonl(session_id);
 
 		    metapack = lcpa_init();
-
+                    printf("check3");   
 		    // create timestamp
 		    gettimeofday(&time, NULL);
 		    timestamp = time.tv_sec * 1000000 + time.tv_usec;
@@ -482,7 +464,7 @@ void *inject_data(void *_args){
 		    lcpf_add_ie(metapack, 10, 14, encoded_payload);
 		    lcpf_add_ie(metapack, 11, 2*PAYLOAD_LEN, payload);
 		    lcpf_add_ie(metapack, 12, strlen((char *) payload_1), payload_1);
-
+                    printf("check4");   
 		    // convert the lorcon metapack to a lorcon packet for sending
 		    txpack = (lorcon_packet_t *) lorcon_packet_from_lcpa(context, metapack);
 		    lorcon_packet_set_mcs(txpack, 1, MCS, GI, BW);
@@ -490,15 +472,16 @@ void *inject_data(void *_args){
 			 perror("lorcon");
       		         exit_program(); 
 		         return 0;
-
+                    printf("check5");   
 		    usleep(interval);
 
 		    printf("\033[K\r"); 
 		    printf("[+] Sent %d frames, MCS %d \n", totalcount, MCS);
 		    fflush(stdout);
 		    totalcount++;
-
+                    printf("check6");   
 		    lcpa_free(metapack);
+		    printf("check7");   
 		}
 	    flag = 0;
     }
@@ -522,7 +505,8 @@ int main(int argc, char *argv[]) {
     u_int16_t   buf_len;
 
     /* ---------------------------------- injector variable init---------------------------------- */
-
+    int value[6];
+    int c,i,tmp;  
     /*char *interface = NULL;
     unsigned int lcode = 0;
     unsigned int npackets = 100;
@@ -752,7 +736,7 @@ int main(int argc, char *argv[]) {
     printf("[+]\t Using channel: %d flags %d\n", channel, ch_flags);
     printf("\n[.]\tMCS %u %s %s\n\n", MCS, BW ? "40MHz" : "20MHz", GI ? "short-gi" : "long-gi");
     */
-    struct injector_args *args = calloc (sizeof (struct injector_args), 1);
+    //struct injector_args *args = calloc (sizeof (struct injector_args), 1);
     /*args->context = context;
     args->metapack = metapack;
     args->txpack = txpack;
@@ -776,7 +760,7 @@ int main(int argc, char *argv[]) {
     else 
 	    printf("estimate_csi thread successfully created \n");
 
-    if(pthread_create(&tid3, NULL, inject_data, (void *)args)!=0)
+    if(pthread_create(&tid3, NULL, inject_data, (void *)&n3)!=0)
 	    printf("failed to create thread2 for injector \n");
     else
 	    printf("inject_data thread successfully created \n");
@@ -792,7 +776,7 @@ int main(int argc, char *argv[]) {
     lorcon_free(context);	
 //    exit_program();
 //    free(csi_status);
-    free(args);
+    //free(args);
     pthread_exit(NULL);    
     return 0;
 }
