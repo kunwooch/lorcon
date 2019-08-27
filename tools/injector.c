@@ -80,6 +80,11 @@ struct sockaddr_in pin;
 
 unsigned int MCS = 0;
 
+lorcon_driver_t *drvlist, *driver;
+lorcon_t *context;
+lcpa_metapack_t *metapack;
+lorcon_packet_t *txpack; 
+
 // declaration of thread condition variables
 pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER;
 pthread_cond_t cond2 = PTHREAD_COND_INITIALIZER;
@@ -92,9 +97,9 @@ pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 int done = 1;
 
 struct injector_args {
-    lorcon_t *context;
-    lcpa_metapack_t *metapack;
-    lorcon_packet_t *txpack;
+    //lorcon_t *context;
+    //lcpa_metapack_t *metapack;
+    //lorcon_packet_t *txpack;
     int BW;
     int GI;
     unsigned int interval;
@@ -313,7 +318,7 @@ void *update_mcs(void *n){
 		 } 
 
                 if(recv_cnt > 0)
-			printf("recv_cnt: %d, MCS index: %d \n ", recv_cnt, eMCS);
+			printf("recv_cnt: %d, MCS index: %d \n", recv_cnt, eMCS);
 			MCS = eMCS;
 	}
     }
@@ -354,9 +359,9 @@ void *inject_data(void *_args){
 
     struct injector_args *args = (struct injector_args *) _args;
 
-    lorcon_t *context = args->context;
-    lcpa_metapack_t *metapack = args->metapack;
-    lorcon_packet_t *txpack = args-> txpack;
+    //lorcon_t *context = args->context;
+    //lcpa_metapack_t *metapack = args->metapack;
+    //lorcon_packet_t *txpack = args-> txpack;
     int BW = args->BW;
     int GI = args->GI;
     unsigned int interval = args->interval;
@@ -415,6 +420,8 @@ void *inject_data(void *_args){
 
 		    usleep(interval);
 
+		    printf("\033[K\r"); 
+		    printf("[+] Sent %d frames, MCS %d \n", totalcount, MCS);
 		    fflush(stdout);
 		    totalcount++;
 
@@ -451,12 +458,12 @@ int main(int argc, char *argv[]) {
     int c,i,tmp;
     int channel, ch_flags;
 
-    lorcon_driver_t *drvlist, *driver;
+    /*lorcon_driver_t *drvlist, *driver;
     lorcon_t *context;
 
     lcpa_metapack_t *metapack;
     lorcon_packet_t *txpack;
-
+    */
     /* delay interval */
     unsigned int interval = 1;
     unsigned int ttime = 1;
@@ -632,7 +639,6 @@ int main(int argc, char *argv[]) {
     }
 
     flag = 0;
-    //printf("sock: %d \n", sock);
 
     /* ---------------------------------- injector init---------------------------------- */
     fread(&session_id, 4, 1, urandom);
@@ -676,9 +682,9 @@ int main(int argc, char *argv[]) {
     printf("\n[.]\tMCS %u %s %s\n\n", MCS, BW ? "40MHz" : "20MHz", GI ? "short-gi" : "long-gi");
 
     struct injector_args *args = calloc (sizeof (struct injector_args), 1);
-    args->context = context;
-    args->metapack = metapack;
-    args->txpack = txpack;
+    //args->context = context;
+    //args->metapack = metapack;
+    //args->txpack = txpack;
     args->BW = BW;
     args->GI = GI;
     args->npackets = npackets;
