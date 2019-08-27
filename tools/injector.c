@@ -364,12 +364,6 @@ void *inject_data(void *_args){
     lcpa_metapack_t *metapack;       
     lorcon_packet_t *txpack;  
 
-    unsigned int lcode = 0;   
-    lorcon_driver_t *drvlist, *driver;   
-    lorcon_t *context; 
-    lcpa_metapack_t *metapack;
-    lorcon_packet_t *txpack; 
-  
     int beacon_interval = 100; 
     int capabilities = 0x0421;                    
     // Session ID
@@ -485,6 +479,9 @@ void *inject_data(void *_args){
 		}
 	    flag = 0;
     }
+    lorcon_close(context);  
+    // Free the LORCON Context 
+    lorcon_free(context); 
 }
  
 int main(int argc, char *argv[]) {
@@ -507,48 +504,6 @@ int main(int argc, char *argv[]) {
     /* ---------------------------------- injector variable init---------------------------------- */
     int value[6];
     int c,i,tmp;  
-    /*char *interface = NULL;
-    unsigned int lcode = 0;
-    unsigned int npackets = 100;
-
-    int value[6];
-    int c,i,tmp;
-    int channel, ch_flags;
-
-    lorcon_driver_t *drvlist, *driver;
-    lorcon_t *context;
-
-    lcpa_metapack_t *metapack;
-    lorcon_packet_t *txpack;
-    
-    unsigned int interval = 1;
-    unsigned int ttime = 1;
-    int BW = 0;
-    int GI = 0; 
-    
-    dmac = "\x04\xF0\x21\x32\xBD\xA5";
-    bmac = "\x00\xDE\xAD\xBE\xEF\x00";
-    
-    uint8_t RA_MAC[6];
-    RA_MAC[0] = 0x04;
-    RA_MAC[1] =0xF0;
-    RA_MAC[2] =0x21;
-    RA_MAC[3] =0x32;
-    RA_MAC[4] =0xBD;
-    RA_MAC[5] =0xA5;
-    DA_MAC = RA_MAC;
-    BSSID_MAC = bmac;
-
-    // Beacon Interval
-    int beacon_interval = 100;
-
-    // Capabilities
-    int capabilities = 0x0421;
-
-    // Session ID
-    uint32_t session_id;
-    FILE *urandom;
-    */
     /* ---------------------------------- UI ---------------------------------- */
 
     printf ("%s - packet injector NEW!\n", argv[0]);
@@ -771,9 +726,9 @@ int main(int argc, char *argv[]) {
 
     printf("\n");
     // Close the interface
-    lorcon_close(context);
+    //lorcon_close(context);
     // Free the LORCON Context
-    lorcon_free(context);	
+    //lorcon_free(context);	
 //    exit_program();
 //    free(csi_status);
     //free(args);
