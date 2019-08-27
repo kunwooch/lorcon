@@ -80,6 +80,22 @@ struct sockaddr_in pin;
 
 unsigned int MCS = 0;
 
+
+int i,tmp;  
+unsigned int count, totalcount;
+uint8_t fcflags = 3; 
+uint8_t fragement = 3;
+uint8_t sequence = 2; 
+unsigned int duration = 0;
+uint8_t encoded_payload[14];
+uint32_t *encoded_counter = (uint32_t *) (encoded_payload + 2);   
+uint32_t *encoded_max = (uint32_t *) (encoded_payload + 6);   
+uint32_t *encoded_session = (uint32_t *) (encoded_payload + 10);  
+uint8_t payload[2*PAYLOAD_LEN];  
+uint8_t payload_1[PAYLOAD_LEN];  
+struct timeval time; 
+uint64_t timestamp; 
+
 char *interface = NULL; 
 unsigned int lcode = 0;
 unsigned int npackets = 100;
@@ -350,7 +366,7 @@ void *update_mcs(void *n){
 
 
 void *inject_data(void *_args){
-    int i,tmp;
+    /*int i,tmp;
     unsigned int count, totalcount;
     uint8_t fcflags = 3;
     uint8_t fragement = 3;
@@ -364,7 +380,7 @@ void *inject_data(void *_args){
     uint8_t payload_1[PAYLOAD_LEN];
     struct timeval time;
     uint64_t timestamp;
-    /*
+    
     uint8_t *dmac = "\x04\xF0\x21\x32\xBD\xA5";
     uint8_t *bmac = "\x00\xDE\xAD\xBE\xEF\x00";
 
