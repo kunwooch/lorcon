@@ -108,12 +108,12 @@ unsigned int interval = 1;
 unsigned int ttime = 1;  
 int BW = 0; 
 int GI = 0;
-uint8_t *dmac;    
-uint8_t *bmac; 
+//uint8_t *dmac;    
+//uint8_t *bmac; 
 uint8_t RA_MAC[6];  
-uint8_t *TA_MAC;  
-uint8_t *DA_MAC;
-uint8_t *BSSID_MAC;
+//uint8_t *TA_MAC;  
+//uint8_t *DA_MAC;
+//uint8_t *BSSID_MAC;
 // Beacon Interva 
 int beacon_interval = 100; 
 // Capabilities 
@@ -379,11 +379,11 @@ void *inject_data(void *_args){
     uint8_t payload_1[PAYLOAD_LEN];
     struct timeval time;
     uint64_t timestamp;
-    
+    */
     uint8_t *dmac = "\x04\xF0\x21\x32\xBD\xA5";
     uint8_t *bmac = "\x00\xDE\xAD\xBE\xEF\x00";
 
-    uint8_t RA_MAC[6];
+    //uint8_t RA_MAC[6];
     RA_MAC[0] = 0x04;
     RA_MAC[1] =0xF0;
     RA_MAC[2] =0x21;
@@ -393,7 +393,7 @@ void *inject_data(void *_args){
     uint8_t *TA_MAC;
     uint8_t *DA_MAC = RA_MAC;
     uint8_t *BSSID_MAC = bmac;
-
+    /*
     struct injector_args *args = (struct injector_args *) _args;
 
     lorcon_t *context = args->context;
@@ -406,6 +406,40 @@ void *inject_data(void *_args){
     uint32_t session_id = args->session_id;
     unsigned int ttime = args->ttime;
     */
+     /* ---------------------------------- injector init---------------------------------- */
+    fread(&session_id, 4, 1, urandom);
+    fclose(urandom);  
+    printf("[+] Using interface %s\n",interface);   
+    if ((driver = lorcon_auto_driver(interface)) == NULL) { 
+	    printf("[!] Could not determine the driver for %s\n", interface); 
+	    return 0;
+    } else {  
+	    printf("[+]\t Driver: %s\n",driver->name);  
+    }   
+    if ((context = lorcon_create(interface, driver)) == NULL) {   
+	    printf("[!]\t Failed to create context");
+	    return 0; 
+    } 
+    // Create Monitor Mode Interface  
+    if (lorcon_open_injmon(context) < 0) {    
+	    printf("[!]\t Could not create Monitor Mode interface!\n");  
+	    return 0; 
+    } else { 
+	    printf("[+]\t Monitor Mode VAP: %s\n\n",lorcon_get_vap(context));  
+	    lorcon_free_driver_list(driver);   
+    }  
+    // Get the MAC of the radio
+    if (lorcon_get_hwmac(context, &TA_MAC) <= 0) {    
+	    printf("[!]\t Could not get hw mac address\n"); 
+	    return 0; 
+    }  
+    printf("[+]\t Using MAC: %02x:%02x:%02x:%02x:%02x:%02x \n",TA_MAC[0],TA_MAC[1],TA_MAC[2],TA_MAC[3],TA_MAC[4],TA_MAC[5]);   
+    printf("[+]\t RX MAC: %02x:%02x:%02x:%02x:%02x:%02x \n",RA_MAC[0],RA_MAC[1],RA_MAC[2],RA_MAC[3],RA_MAC[4],RA_MAC[5]);    
+    // Set the channel we'll be injecting on 
+    lorcon_set_ht_channel(context, channel, ch_flags); 
+    printf("[+]\t Using channel: %d flags %d\n", channel, ch_flags);    
+    printf("\n[.]\tMCS %u %s %s\n\n", MCS, BW ? "40MHz" : "20MHz", GI ? "short-gi" : "long-gi");  
+
     while (1){
 	    sleep(ttime*60);
 	    //1) disable thread 1 that recv CSI and transfer CSI with the server
@@ -507,11 +541,11 @@ int main(int argc, char *argv[]) {
     unsigned int ttime = 1;
     int BW = 0;
     int GI = 0; 
-    */
+    
     dmac = "\x04\xF0\x21\x32\xBD\xA5";
     bmac = "\x00\xDE\xAD\xBE\xEF\x00";
-    /*
-    uint8_t RA_MAC[6];*/
+    
+    uint8_t RA_MAC[6];
     RA_MAC[0] = 0x04;
     RA_MAC[1] =0xF0;
     RA_MAC[2] =0x21;
@@ -519,7 +553,7 @@ int main(int argc, char *argv[]) {
     RA_MAC[4] =0xBD;
     RA_MAC[5] =0xA5;
     DA_MAC = RA_MAC;
-    BSSID_MAC = bmac;/*
+    BSSID_MAC = bmac;
 
     // Beacon Interval
     int beacon_interval = 100;
@@ -676,9 +710,9 @@ int main(int argc, char *argv[]) {
     }
 
     flag = 0;
-
+    
     /* ---------------------------------- injector init---------------------------------- */
-    fread(&session_id, 4, 1, urandom);
+    /*fread(&session_id, 4, 1, urandom);
     fclose(urandom);
 
     printf("[+] Using interface %s\n",interface);
@@ -717,7 +751,7 @@ int main(int argc, char *argv[]) {
 
     printf("[+]\t Using channel: %d flags %d\n", channel, ch_flags);
     printf("\n[.]\tMCS %u %s %s\n\n", MCS, BW ? "40MHz" : "20MHz", GI ? "short-gi" : "long-gi");
-
+    */
     struct injector_args *args = calloc (sizeof (struct injector_args), 1);
     /*args->context = context;
     args->metapack = metapack;
