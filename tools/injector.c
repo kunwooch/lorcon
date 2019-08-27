@@ -80,7 +80,6 @@ struct sockaddr_in pin;
 
 unsigned int MCS = 0;
 
-
 int i,tmp;  
 unsigned int count, totalcount;
 uint8_t fcflags = 3; 
@@ -93,14 +92,13 @@ uint32_t *encoded_max = (uint32_t *) (encoded_payload + 6);
 uint32_t *encoded_session = (uint32_t *) (encoded_payload + 10);  
 uint8_t payload[2*PAYLOAD_LEN];  
 uint8_t payload_1[PAYLOAD_LEN];  
-struct timeval time; 
 uint64_t timestamp; 
 
 char *interface = NULL; 
 unsigned int lcode = 0;
 unsigned int npackets = 100;
 int value[6]; 
-int c,i,tmp;
+int c;
 int channel, ch_flags;  
 lorcon_driver_t *drvlist, *driver;   
 lorcon_t *context;
@@ -366,6 +364,7 @@ void *update_mcs(void *n){
 
 
 void *inject_data(void *_args){
+    struct timeval time;                                                                                             
     /*int i,tmp;
     unsigned int count, totalcount;
     uint8_t fcflags = 3;
