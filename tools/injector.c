@@ -87,6 +87,7 @@ unsigned int npackets = 100;
 unsigned int ttime = 1;                                                                                           
 unsigned int interval = 1; 
 uint8_t RA_MAC[6];
+FILE *urandom;    
 
 // declaration of thread condition variables
 pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER;
@@ -368,7 +369,6 @@ void *inject_data(void *_args){
     int capabilities = 0x0421;                    
     // Session ID
     uint32_t session_id;
-    FILE *urandom;
 
     /*
     struct injector_args *args = (struct injector_args *) _args;
@@ -384,7 +384,8 @@ void *inject_data(void *_args){
     */
      /* ---------------------------------- injector init---------------------------------- */
     fread(&session_id, 4, 1, urandom);
-    fclose(urandom);  
+    fclose(urandom); 
+
     printf("[+] Using interface %s\n",interface);   
     if ((driver = lorcon_auto_driver(interface)) == NULL) { 
 	    printf("[!] Could not determine the driver for %s\n", interface); 
