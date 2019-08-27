@@ -94,12 +94,12 @@ unsigned int interval = 1;
 unsigned int ttime = 1;  
 int BW = 0; 
 int GI = 0;
-uint8_t *dmac = "\x04\xF0\x21\x32\xBD\xA5";    
-uint8_t *bmac = "\x00\xDE\xAD\xBE\xEF\x00"; 
+uint8_t *dmac;    
+uint8_t *bmac; 
 uint8_t RA_MAC[6];  
 uint8_t *TA_MAC;  
-uint8_t *DA_MAC = RA_MAC;
-uint8_t *BSSID_MAC = bmac;
+uint8_t *DA_MAC;
+uint8_t *BSSID_MAC;
 // Beacon Interva 
 int beacon_interval = 100; 
 // Capabilities 
@@ -245,7 +245,7 @@ void *estimate_csi(void *n){
     int    byte_cnt,send_cnt,recv_cnt;
     int    CPUendian;
     int    eMCS;
-    int    mac_array[] = {45, 55, 207, 122, 221, 241, 25, 61, 139};
+    int    mac_array[] = {45, 55, 207, 122, 221, 11, 241, 25, 61, 139};
 
     flag = 0;
     quit = 0;
@@ -352,7 +352,6 @@ void *update_mcs(void *n){
 void *inject_data(void *_args){
     int i,tmp;
     unsigned int count, totalcount;
-    //unsigned int lcode = 0;
     uint8_t fcflags = 3;
     uint8_t fragement = 3;
     uint8_t sequence = 2;
@@ -369,13 +368,13 @@ void *inject_data(void *_args){
     uint8_t *dmac = "\x04\xF0\x21\x32\xBD\xA5";
     uint8_t *bmac = "\x00\xDE\xAD\xBE\xEF\x00";
 
-    uint8_t RA_MAC[6];*/
+    uint8_t RA_MAC[6];
     RA_MAC[0] = 0x04;
     RA_MAC[1] =0xF0;
     RA_MAC[2] =0x21;
     RA_MAC[3] =0x32;
     RA_MAC[4] =0xBD;
-    RA_MAC[5] =0xA5;/*
+    RA_MAC[5] =0xA5;
     uint8_t *TA_MAC;
     uint8_t *DA_MAC = RA_MAC;
     uint8_t *BSSID_MAC = bmac;
@@ -439,7 +438,9 @@ void *inject_data(void *_args){
 		    txpack = (lorcon_packet_t *) lorcon_packet_from_lcpa(context, metapack);
 		    lorcon_packet_set_mcs(txpack, 1, MCS, GI, BW);
 		    if (lorcon_inject(context,txpack) < 0 )
-			return -1;
+			 perror("lorcon");
+      		         exit_program(); 
+		         return 0;
 
 		    usleep(interval);
 
@@ -491,20 +492,19 @@ int main(int argc, char *argv[]) {
     unsigned int ttime = 1;
     int BW = 0;
     int GI = 0; 
-
-    uint8_t *dmac = "\x04\xF0\x21\x32\xBD\xA5";
-    uint8_t *bmac = "\x00\xDE\xAD\xBE\xEF\x00";
-
+    */
+    dmac = "\x04\xF0\x21\x32\xBD\xA5";
+    bmac = "\x00\xDE\xAD\xBE\xEF\x00";
+    /*
     uint8_t RA_MAC[6];*/
     RA_MAC[0] = 0x04;
     RA_MAC[1] =0xF0;
     RA_MAC[2] =0x21;
     RA_MAC[3] =0x32;
     RA_MAC[4] =0xBD;
-    RA_MAC[5] =0xA5;/*
-    uint8_t *TA_MAC;
-    uint8_t *DA_MAC = RA_MAC;
-    uint8_t *BSSID_MAC = bmac;
+    RA_MAC[5] =0xA5;
+    DA_MAC = RA_MAC;
+    BSSID_MAC = bmac;/*
 
     // Beacon Interval
     int beacon_interval = 100;
