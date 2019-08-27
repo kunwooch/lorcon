@@ -100,20 +100,6 @@ pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 // gloabl variable which decides which waiting thread should be scheduled
 int done = 1;
 
-struct injector_args {
-    //lorcon_t *context;
-    //lcpa_metapack_t *metapack;
-    //lorcon_packet_t *txpack;
-    int BW;
-    int GI;
-    unsigned int interval;
-    unsigned int npackets;
-    unsigned int ttime;
-    //uint8_t RA_MAC[6];
-    //uint8_t *TA_MAC;
-    uint32_t session_id;
-};
-
 int open_csi_device(){
    int fd;
    fd = open("/dev/CSI_dev",O_RDWR);
@@ -142,32 +128,6 @@ int read_csi_buf(unsigned char* buf_addr,int fd, int buf_size){
         return 0;
 }
 
-void record_status(unsigned char* buf_addr, int cnt, csi_struct* csi_status_tmp){
-    int i;
-    csi_status_tmp->tstamp  =
-         ((buf_addr[0] << 56) & 0x00000000000000ff) | ((buf_addr[1] << 48) & 0x000000000000ff00) |
-         ((buf_addr[2] << 40) & 0x0000000000ff0000) | ((buf_addr[3] << 32) & 0x00000000ff000000) |
-         ((buf_addr[4] << 24) & 0x000000ff00000000) | ((buf_addr[5] << 16) & 0x0000ff0000000000) |
-         ((buf_addr[6] << 8)  & 0x00ff000000000000) | ((buf_addr[7])       & 0xff00000000000000) ;
-    csi_status_tmp->csi_len = ((buf_addr[8] << 8) & 0xff00) | (buf_addr[9] & 0x00ff);
-    csi_status_tmp->channel = ((buf_addr[10] << 8) & 0xff00) | (buf_addr[11] & 0x00ff);
-    csi_status_tmp->buf_len = ((buf_addr[cnt-2] << 8) & 0xff00) | (buf_addr[cnt-1] & 0x00ff);
-    csi_status_tmp->payload_len = ((buf_addr[csi_st_len] << 8) & 0xff00) | ((buf_addr[csi_st_len + 1]) & 0x00ff);
-    csi_status_tmp->phyerr    = buf_addr[12];
-    csi_status_tmp->noise     = buf_addr[13];
-    csi_status_tmp->rate      = buf_addr[14];
-    csi_status_tmp->chanBW    = buf_addr[15];
-    csi_status_tmp->num_tones = buf_addr[16];
-    csi_status_tmp->nr        = buf_addr[17];
-    csi_status_tmp->nc        = buf_addr[18];
-
-    csi_status_tmp->rssi      = buf_addr[19];
-    csi_status_tmp->rssi_0    = buf_addr[20];
-    csi_status_tmp->rssi_1    = buf_addr[21];
-    csi_status_tmp->rssi_2    = buf_addr[22];
-    csi_status_tmp->mac_addr  = buf_addr[csi_st_len + csi_status_tmp->csi_len + 16 + 1];
-}
-
 
 void sig_handler(int signo){
     if(signo == SIGINT){
@@ -182,6 +142,9 @@ void exit_program(){
     close(fd);
     close(sock);
     sock = -1;
+    lorcon_close(context); 
+    // Free the LORCON Context
+    lorcon_free(context);    
 }
 
 int checkCPUendian(){
@@ -208,7 +171,7 @@ void usage(char *argv[]) {
     printf("\t-o <hostname>             Hostname\n");
     printf("\t-p <port>                 Server port\n");
     printf("\nExample:\n");
-    printf("\t%s -i mon0 -c 6HT20 -m 0 -n 1 -d 1 -o 192.168.1.211 -p 6767 -s 55\n\n", argv[0]);
+    printf("\t%s -i mon0 -c 6HT20 -m 0 -n 100 -d 20 -o 192.168.1.139 -p 6767 -t 1\n\n", argv[0]);
 }
 
 bool isvalueinarray(int val, int *arr, int size){
@@ -426,14 +389,14 @@ void *inject_data(void *_args){
 			    payload[2*i+1] = (count & 0xff00) >> 8;
 		    }
 		    memset(encoded_payload, 0, 14);
-		    printf("check1/n");
+		    //printf("check1/n");
 		    // set mcs count
 		    encoded_payload[0] = MCS;
 		    if (GI)
 			encoded_payload[0] |= HT_FLAG_GI;
 		    if (BW)
 			encoded_payload[0] |= HT_FLAG_40;
-                    printf("check2/n");   
+                    //printf("check2/n");   
 		    // set the location code
 		    encoded_payload[1] = lcode & 0xff;
 
@@ -442,7 +405,7 @@ void *inject_data(void *_args){
 		    *encoded_session = htonl(session_id);
 
 		    metapack = lcpa_init();
-                    printf("check3/n");   
+                    //printf("check3/n");   
 		    // create timestamp
 		    gettimeofday(&time, NULL);
 		    timestamp = time.tv_sec * 1000000 + time.tv_usec;
@@ -453,7 +416,7 @@ void *inject_data(void *_args){
 		    lcpf_add_ie(metapack, 10, 14, encoded_payload);
 		    lcpf_add_ie(metapack, 11, 2*PAYLOAD_LEN, payload);
 		    lcpf_add_ie(metapack, 12, strlen((char *) payload_1), payload_1);
-                    printf("check4/n");   
+                    //printf("check4/n");   
 		    // convert the lorcon metapack to a lorcon packet for sending
 		    txpack = (lorcon_packet_t *) lorcon_packet_from_lcpa(context, metapack);
 		    lorcon_packet_set_mcs(txpack, 1, MCS, GI, BW);
@@ -462,17 +425,17 @@ void *inject_data(void *_args){
       		         exit_program(); 
 		         return 0;
 		    }
-                    printf("check5/n");   
+                    //printf("check5/n");   
 		    usleep(interval);
 
 		    fflush(stdout);
 		    totalcount++;
-                    printf("check6/n");   
+                    //printf("check6/n");   
 		    lcpa_free(metapack);
-		    printf("check7/n");   
+		    //printf("check7/n");   
 		}
 	    flag = 0;
-	    printf("Sent %d frames, MCS %d \n", totalcount, MCS);    
+	    printf("Sent %d frames, MCS %d, interval \n", totalcount, MCS, interval);    
     }
     lorcon_close(context);  
     // Free the LORCON Context 
