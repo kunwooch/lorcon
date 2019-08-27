@@ -142,9 +142,6 @@ void exit_program(){
     close(fd);
     close(sock);
     sock = -1;
-    lorcon_close(context); 
-    // Free the LORCON Context
-    lorcon_free(context);    
 }
 
 int checkCPUendian(){
@@ -370,7 +367,9 @@ void *inject_data(void *_args){
 
     while(quit == 0){
 	    if (quit == 1){
-		    exit_program(); 
+		    exit_program();
+		    lorcon_close(context); 
+                    lorcon_free(context);  
 		    return 0;   
 	    } 
 
@@ -435,7 +434,7 @@ void *inject_data(void *_args){
 		    //printf("check7/n");   
 		}
 	    flag = 0;
-	    printf("Sent %d frames, MCS %d, interval \n", totalcount, MCS, interval);    
+	    printf("Sent %d frames, MCS %d, interval %d \n", totalcount, MCS, interval);    
     }
     lorcon_close(context);  
     // Free the LORCON Context 
