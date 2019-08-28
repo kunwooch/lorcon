@@ -34,22 +34,6 @@
 #include <sys/time.h>
 #include <arpa/inet.h>
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <termios.h>
-#include <pthread.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <sys/select.h>
-#include <netdb.h>
-
-#include <stdbool.h>
-
-#include <lorcon2/csi_func.h>
 #include <lorcon2/lorcon.h>
 #include <lorcon2/lorcon_forge.h>
 #include <lorcon2/lorcon_packasm.h>
@@ -59,256 +43,54 @@
 #define HT_FLAG_40  (1 << 7)
 #define HT_FLAG_GI  (1 << 6)
 
-#define csi_st_len 23
 #define PAYLOAD_LEN 64
-#define BUFSIZE 4096
-#define Kernel_CSI_ST_LEN 23 
-
-unsigned char buf_addr[BUFSIZE];
-unsigned char data_buf[1500];
-
-int quit;
-int sock;
-int fd;
-int log_flag;
-FILE*  fp;
-COMPLEX csi_matrix[3][3][114];
-csi_struct*   csi_status;
-int flag;
-struct hostent *hp;
-struct sockaddr_in pin;
-
-char *interface = NULL; 
-int channel, ch_flags;
-unsigned int MCS = 0;
-int BW = 0;           
-int GI = 0; 
-unsigned int npackets = 100;
-unsigned int ttime = 1;                                                                                           
-unsigned int interval = 1; 
-uint8_t RA_MAC[6];
-FILE *urandom;    
-
-// declaration of thread condition variables
-pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cond2 = PTHREAD_COND_INITIALIZER;
-pthread_cond_t cond3 = PTHREAD_COND_INITIALIZER;
-
-// mutex which we are going to use aboid race condition
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-
-// gloabl variable which decides which waiting thread should be scheduled
-int done = 1;
-
-int open_csi_device(){
-   int fd;
-   fd = open("/dev/CSI_dev",O_RDWR);
-    return fd;
-}
-
-void close_csi_device(int fd){
-    close(fd);
-    remove("/dev/CSI_dev");
-}
-
-
-int read_csi_buf(unsigned char* buf_addr,int fd, int buf_size){
-    int cnt;
-    /* listen to the port
-     * read when 1, a csi is reported from kernel
-     *           2, time out
-     */
-    cnt = read(fd,buf_addr,buf_size);
-    //printf("cnt: %d \n", cnt);
-    if(cnt < 0)
-	return 0;
-    if(cnt)
-        return cnt;
-    else
-        return 0;
-}
-
-
-void sig_handler(int signo){
-    if(signo == SIGINT){
-        quit = 1;
-    }
-}
-void exit_program(){
-    printf("!!! WE EXIT !!!\n");
-    if (log_flag == 1){
-        fclose(fp);
-    }
-    close(fd);
-    close(sock);
-    sock = -1;
-}
-
-int checkCPUendian(){
-    int num = 1;
-    if(*((char*)&num) == 1){
-//        printf("Little-endian\n");
-        return 0;
-    }
-    else{
-//        printf("Big-endian\n");
-        return 1;
-    }
-}
 
 void usage(char *argv[]) {
-    printf("\t-i <interface>            Radio interface\n");
-    printf("\t-c <channel>              Channel (should be HT40)\n");
-    printf("\t-m <MCS_index>            MCS index (0~15)\n");
-    printf("\t-b <band_width>           Band width(0-20M | 1-40M)\n");
-    printf("\t-g <guard_interval>       Guard interval\n");
-    printf("\t-n <number of packets>    Number of packets to send\n");
-    printf("\t-t <time_interval>        Transmission delay (m)\n");
-    printf("\t-d <delay>                Interpacket delay (us)\n");
-    printf("\t-o <hostname>             Hostname\n");
-    printf("\t-p <port>                 Server port\n");
+    printf("\t-i <interface>        Radio interface\n");
+    printf("\t-c <channel>          Channel (should be HT40)\n");
+    printf("\t-m <MCS_index>        MCS index (0~15)\n");
+    printf("\t-b <band_width>       Band width(0-20M | 1-40M)\n");
+    printf("\t-g <guard_interval>   Guard interval\n");
+    printf("\t-d <delay>            Interframe delay (us)\n");
+
     printf("\nExample:\n");
-    printf("\t%s -i mon0 -c 6HT20 -m 0 -n 100 -d 20 -o 192.168.1.139 -p 6767 -t 1\n\n", argv[0]);
+    printf("\t%s -i mon0 -c 6HT40 -m 0 -d 1000\n\n", argv[0]);
 }
+int main(int argc, char *argv[]) {
+    char *interface = NULL;
+    unsigned int lcode = 0;
+    unsigned int npackets = 100;
+    unsigned int MCS = 0;
 
-bool isvalueinarray(int val, int *arr, int size){
-    int i;
-    for (i=0; i<size; i++){
-        if (arr[i] == val)
-            return true;
-    }
-    return false;
-}
+    int value[6];
+    int c,i,tmp;
+    int channel, ch_flags;
 
-void *estimate_csi(void *n){
-    int    total_msg_cnt,cnt;
-    int    data_len,data_len_local;
-    int    byte_cnt,send_cnt,recv_cnt;
-    int    CPUendian;
-    int    eMCS;
-    int    mac_array[] = {45, 55, 207, 122, 221, 11, 241, 25, 61, 139};
+    lorcon_driver_t *drvlist, *driver;
+    lorcon_t *context;
 
-    flag = 0;
-    quit = 0;
-    printf("# Receiving data! Press Ctrl+c to quit!\n");
-    while(quit == 0){    
-        if (quit == 1){
-            exit_program();
-            return 0;
-        }
+    lcpa_metapack_t *metapack;
+    lorcon_packet_t *txpack;
 
-	if (flag == 0){
-		//1) send CSI to the server
-		cnt = read_csi_buf(buf_addr,fd,BUFSIZE);
+    /* delay interval */
+    unsigned int interval = 1;
 
-		if(cnt){
-		    total_msg_cnt += 1;
-		    data_len        = cnt;
-		    data_len_local  = data_len;
+    /* Iterations through HT and GI */
+//    int mcs_iter = 0;
+    int BW = 0;
+    int GI = 0; 
+//    int ht_iter = 0;
+//    int gi_iter = 0;
+    unsigned int count = 0;
 
-		    CPUendian = checkCPUendian();
-		    if(CPUendian == 1){
-			//printf("SWAP data_len\n");
-			unsigned char *tmp = (unsigned char *)&data_len;
-			unsigned char t;
-			t = tmp[0];tmp[0] = tmp[3];tmp[3] = t;
-			t = tmp[1];tmp[1] = tmp[2];tmp[2] = t;
-		    }
+    unsigned int totalcount = 1;
 
-		    u_int16_t csi_len = ((buf_addr[8] << 8) & 0xff00) | (buf_addr[9] & 0x00ff);
-                    u_int8_t mac_addr = buf_addr[csi_st_len + csi_len + 16 + 1];
-
-	            int mac_array_size = (int)(sizeof(mac_array)/sizeof(mac_array[0]));
-                    printf("send_cnt: %d, mac_addr: %d \n", cnt, mac_addr);
-
-                    if (isvalueinarray(mac_addr, mac_array, mac_array_size)){
-			//printf("send CSI to the server \n");
-		    	// send the count first
-		    	send_cnt  = send(sock,(unsigned char *)&data_len,sizeof(int),0);
-		    	if(send_cnt == -1){
-				perror("send");
-				exit_program();
-				return 0;
-		    	}
-		 
-		    	// send the actual data
-		    	byte_cnt = 0;
-		    	while(byte_cnt < data_len_local){
-				send_cnt = send(sock,buf_addr+byte_cnt,data_len_local-byte_cnt,0);
-				if(send_cnt == -1){
-			    	perror("send");
-			    	exit_program();
-			    	return 0;
-				}
-				byte_cnt += send_cnt;
-		    	}
-		     }
-		}
-	}
-    }
-    return NULL;
-}
-
-void *update_mcs(void *n){
-    int    eMCS;
-    int    recv_cnt;
-    int    CPUendian;
-    //printf("update_mcs thread ready\n");
-
-    flag = 0;
-    quit = 0;
-    while(quit == 0){
-        if (quit == 1){
-            exit_program();
-            return 0;
-        }
-
-        if (flag == 0){
-                //2) receive and update the MCS index
-		recv_cnt = recv(sock, &eMCS, sizeof(eMCS), 0);
-                if(recv_cnt == -1){
-                    perror("recv");
-                    exit_program();
-                    return 0;
-                }
-
-		 CPUendian = checkCPUendian();    
-		 if(CPUendian == 1){  
-			 //printf("SWAP data_len\n"); 
-			 unsigned char *tmp = (unsigned char *)&eMCS;    
-			 unsigned char t; 
-			 t = tmp[0];tmp[0] = tmp[3];tmp[3] = t; 
-			 t = tmp[1];tmp[1] = tmp[2];tmp[2] = t;
-		 } 
-
-                if(recv_cnt > 0)
-			printf("recv_cnt: %d, MCS index: %d \n", recv_cnt, eMCS);
-			MCS = eMCS;
-	}
-    }
-    return NULL;
-}
-
-
-void *inject_data(void *_args){
-    int i,tmp;
-    unsigned int count, totalcount;
-    uint8_t fcflags = 3;
-    uint8_t fragement = 3;
-    uint8_t sequence = 2;
-    unsigned int duration = 0;
-    uint8_t encoded_payload[14];
-    uint32_t *encoded_counter = (uint32_t *) (encoded_payload + 2);
-    uint32_t *encoded_max = (uint32_t *) (encoded_payload + 6);
-    uint32_t *encoded_session = (uint32_t *) (encoded_payload + 10);
-    uint8_t payload[2*PAYLOAD_LEN];
-    uint8_t payload_1[PAYLOAD_LEN];
-    struct timeval time;
-    uint64_t timestamp;
-    
     uint8_t *dmac = "\x04\xF0\x21\x32\xBD\xA5";
+
     uint8_t *bmac = "\x00\xDE\xAD\xBE\xEF\x00";
 
+//    uint8_t *RA_MAC = "\x04\xF0\x21\x32\xBD\xA5";
+    uint8_t RA_MAC[6];
     RA_MAC[0] = 0x04;
     RA_MAC[1] =0xF0;
     RA_MAC[2] =0x21;
@@ -319,153 +101,36 @@ void *inject_data(void *_args){
     uint8_t *DA_MAC = RA_MAC;
     uint8_t *BSSID_MAC = bmac;
 
-    unsigned int lcode = 0; 
-    lorcon_driver_t *drvlist, *driver; 
-    lorcon_t *context;  
-    lcpa_metapack_t *metapack;       
-    lorcon_packet_t *txpack;  
+    uint8_t fcflags = 3;
+    uint8_t fragement = 3;
+    uint8_t sequence = 2;
+    unsigned int duration = 0;
+    uint8_t encoded_payload[14];
+    uint32_t *encoded_counter = (uint32_t *) (encoded_payload + 2);
+    uint32_t *encoded_max = (uint32_t *) (encoded_payload + 6);
+    uint32_t *encoded_session = (uint32_t *) (encoded_payload + 10);
 
-    int beacon_interval = 100; 
-    int capabilities = 0x0421;                    
+    uint8_t payload[2*PAYLOAD_LEN];
+    uint8_t payload_1[PAYLOAD_LEN];
+
+    // Timestamp
+    struct timeval time; 
+    uint64_t timestamp; 
+
+    // Beacon Interval
+    int beacon_interval = 100;
+
+    // Capabilities
+    int capabilities = 0x0421;
+
     // Session ID
     uint32_t session_id;
-
-    /* ---------------------------------- injector init---------------------------------- */
-    fread(&session_id, 4, 1, urandom);
-    fclose(urandom); 
-
-    printf("[+] Using interface %s\n",interface);   
-    if ((driver = lorcon_auto_driver(interface)) == NULL) { 
-	    printf("[!] Could not determine the driver for %s\n", interface); 
-	    return 0;
-    } else {  
-	    printf("[+]\t Driver: %s\n",driver->name);  
-    }   
-    if ((context = lorcon_create(interface, driver)) == NULL) {   
-	    printf("[!]\t Failed to create context");
-	    return 0; 
-    } 
-    // Create Monitor Mode Interface  
-    if (lorcon_open_injmon(context) < 0) {    
-	    printf("[!]\t Could not create Monitor Mode interface!\n");  
-	    return 0; 
-    } else { 
-	    printf("[+]\t Monitor Mode VAP: %s\n\n",lorcon_get_vap(context));  
-	    lorcon_free_driver_list(driver);   
-    }  
-    // Get the MAC of the radio
-    if (lorcon_get_hwmac(context, &TA_MAC) <= 0) {    
-	    printf("[!]\t Could not get hw mac address\n"); 
-	    return 0; 
-    }  
-    printf("[+]\t Using MAC: %02x:%02x:%02x:%02x:%02x:%02x \n",TA_MAC[0],TA_MAC[1],TA_MAC[2],TA_MAC[3],TA_MAC[4],TA_MAC[5]);   
-    printf("[+]\t RX MAC: %02x:%02x:%02x:%02x:%02x:%02x \n",RA_MAC[0],RA_MAC[1],RA_MAC[2],RA_MAC[3],RA_MAC[4],RA_MAC[5]);    
-    // Set the channel we'll be injecting on 
-    lorcon_set_ht_channel(context, channel, ch_flags); 
-    printf("[+]\t Using channel: %d flags %d\n", channel, ch_flags);    
-    printf("\n[.]\tMCS %u %s %s\n\n", MCS, BW ? "40MHz" : "20MHz", GI ? "short-gi" : "long-gi");  
-
-    while(quit == 0){
-	    if (quit == 1){
-		    exit_program();
-		    lorcon_close(context); 
-                    lorcon_free(context);  
-		    return 0;   
-	    } 
-
-	    sleep(ttime*60);
-	    //1) disable thread 1 that recv CSI and transfer CSI with the server
-	    flag = 1;
-            totalcount = 0;
-
-	    //2) inject data to AP based on the calculated MCS
-	    printf("--------------inject to other clients!--------------\n");
-	    for (count = 0; count < npackets; count++) {
-		    memset(payload, 0, 2*PAYLOAD_LEN);
-		    memset(payload_1, 0, PAYLOAD_LEN);
-		    for (i = 0; i < PAYLOAD_LEN; i++){
-			    payload[2*i] = count & 0x00ff;
-			    payload[2*i+1] = (count & 0xff00) >> 8;
-		    }
-		    memset(encoded_payload, 0, 14);
-		    //printf("check1/n");
-		    // set mcs count
-		    encoded_payload[0] = MCS;
-		    if (GI)
-			encoded_payload[0] |= HT_FLAG_GI;
-		    if (BW)
-			encoded_payload[0] |= HT_FLAG_40;
-                    //printf("check2/n");   
-		    // set the location code
-		    encoded_payload[1] = lcode & 0xff;
-
-		    *encoded_counter = htonl(count);
-		    *encoded_max = htonl(npackets);
-		    *encoded_session = htonl(session_id);
-
-		    metapack = lcpa_init();
-                    //printf("check3/n");   
-		    // create timestamp
-		    gettimeofday(&time, NULL);
-		    timestamp = time.tv_sec * 1000000 + time.tv_usec;
-
-		    lcpf_data(metapack,fcflags,duration,RA_MAC,TA_MAC,RA_MAC,TA_MAC,fragement,sequence);
-
-		    lcpf_add_ie(metapack, 0, strlen("packet_injection"), "packet_injection");
-		    lcpf_add_ie(metapack, 10, 14, encoded_payload);
-		    lcpf_add_ie(metapack, 11, 2*PAYLOAD_LEN, payload);
-		    lcpf_add_ie(metapack, 12, strlen((char *) payload_1), payload_1);
-                    //printf("check4/n");   
-		    // convert the lorcon metapack to a lorcon packet for sending
-		    txpack = (lorcon_packet_t *) lorcon_packet_from_lcpa(context, metapack);
-		    lorcon_packet_set_mcs(txpack, 1, MCS, GI, BW);
-		    if (lorcon_inject(context,txpack) < 0 ){
-			 perror("lorcon");
-      		         exit_program(); 
-		         return 0;
-		    }
-                    //printf("check5/n");   
-		    usleep(interval);
-
-		    fflush(stdout);
-		    totalcount++;
-                    //printf("check6/n");   
-		    lcpa_free(metapack);
-		    //printf("check7/n");   
-		}
-	    flag = 0;
-	    printf("Sent %d frames, MCS %d, interval %d \n", totalcount, MCS, interval);    
-    }
-    lorcon_close(context);  
-    // Free the LORCON Context 
-    lorcon_free(context); 
-}
- 
-int main(int argc, char *argv[]) {
-    pthread_t tid1, tid2, tid3;
-
-    /* ---------------------------------- socket variable init---------------------------------- */   
-    char   *hostname = NULL;
-    int    port;
-    int    ret;
-
-    fd_set readfds,writefds,exceptfds;
-
-    FD_ZERO(&readfds);
-    FD_ZERO(&writefds);
-    FD_ZERO(&exceptfds);
-
-    u_int8_t    tmp_int8;
-    u_int16_t   buf_len;
-
-    /* ---------------------------------- injector variable init---------------------------------- */
-    int value[6];
-    int c,i,tmp;  
-    /* ---------------------------------- UI ---------------------------------- */
+    FILE *urandom;
 
     printf ("%s - packet injector NEW!\n", argv[0]);
     printf ("-----------------------------------------------------\n\n");
-    while ((c = getopt(argc, argv, "hi:c:m:b:g:n:t:d:o:p:a:")) != EOF) {
+
+    while ((c = getopt(argc, argv, "hi:c:m:b:g:n:d:a:")) != EOF) {
 	switch (c) {
 	case 'i': 
 		interface = strdup(optarg);
@@ -494,35 +159,16 @@ int main(int argc, char *argv[]) {
 		    return -1;
 		}
 		break;
-	case 'n':
-                if (sscanf(optarg, "%u", &npackets) != 1) {
-                    printf("ERROR: Unable to parse number of packets\n");
-                    return -1;
-                }
-                break;
-	case 't':
-                if (sscanf(optarg, "%u", &ttime) != 1){
-                    printf("ERROR: Unable to parse transmission delay");
-                    return -1;
-                }
-                break;
     	case 'd':
 		if (sscanf(optarg, "%u", &interval) != 1) {
-		    printf("ERROR: Unable to parse interpacket delay\n");
+		    printf("ERROR: Unable to parse interframe interval\n");
 		    return -1;
 		}
 		break;
-        case 'o':
-		hostname = strdup(optarg);		
-                break;
-        case 'p':
-                if (sscanf(optarg, "%u", &port) != 1) {
-                    printf("ERROR: Unable to parse server port\n");
-                    return -1;
-                }
-                break;
 	case 'a':
+		//if (6 == sscanf(optarg, "%x:%x:%x:%x:%x:%x", &value[0],&value[1],&value[2],&value[3],&value[4],&value[5]) ){
 		tmp = sscanf(optarg, "%x:%x:%x:%x:%x:%x", &value[0],&value[1],&value[2],&value[3],&value[4],&value[5]);
+		
 		printf("Read MAC, num:%d\n",tmp);
 		if (6 == tmp ){
 			printf("Read MAC, entering loop\n");
@@ -553,85 +199,35 @@ int main(int argc, char *argv[]) {
 	return -1;
     }
 
-    if ( hostname == NULL) {
-        printf ("ERROR: hostname not set (see injector -h for more info)\n");
-        return -1;
-    }
-
     if ((urandom = fopen("/dev/urandom", "rb")) == NULL) {
         printf("ERROR:  Could not open urandom for session id: %s\n", strerror(errno));
         return -1;
     }
 
-    /* ---------------------------------- client_main init---------------------------------- */
-    fd = open_csi_device();
-    if (fd < 0){
-        perror("Failed to open the CSI device...");
-        return 0;
-    }
-
-    memset(&pin,0,sizeof(pin));
-    pin.sin_family = AF_INET;
-    pin.sin_port   = htons(port);
-
-    if ((hp = gethostbyname(hostname))!= NULL){
-        pin.sin_addr.s_addr = ((struct in_addr *)hp->h_addr)->s_addr;
-    }else{
-        pin.sin_addr.s_addr = inet_addr(hostname);
-    }
-
-    // opening a socket and check whether it is successfully opened
-    if((sock = (int)socket(AF_INET,SOCK_STREAM,0)) == -1){
-        perror("socket");
-        return 0;
-    }
-    printf("Waiting for the connection!\n");
-    // connect to the server
-    ret = connect(sock,(const struct sockaddr *)&pin,sizeof(pin));
-    if(ret == -1){
-        perror("connect");
-        exit_program();
-        return 0;
-    }
-    printf("Connection with server is built!\n");
-
-    FD_SET(sock,&readfds);
-    FD_SET(sock,&writefds);
-    FD_SET(sock,&exceptfds);
-
-    if (signal(SIGINT, sig_handler) == SIG_ERR){
-        printf("Can't catch SIGINT\n");
-        exit_program();
-        return 0;
-    }
-
-    flag = 0;
-    
-    /* ---------------------------------- injector init---------------------------------- */
-    /*fread(&session_id, 4, 1, urandom);
+    fread(&session_id, 4, 1, urandom);
     fclose(urandom);
 
     printf("[+] Using interface %s\n",interface);
-
+	
     if ((driver = lorcon_auto_driver(interface)) == NULL) {
-        printf("[!] Could not determine the driver for %s\n", interface);
-        return -1;
+	printf("[!] Could not determine the driver for %s\n", interface);
+	return -1;
     } else {
-        printf("[+]\t Driver: %s\n",driver->name);
+	printf("[+]\t Driver: %s\n",driver->name);
     }
 
     if ((context = lorcon_create(interface, driver)) == NULL) {
         printf("[!]\t Failed to create context");
-        return -1;
+        return -1; 
     }
 
     // Create Monitor Mode Interface
     if (lorcon_open_injmon(context) < 0) {
-        printf("[!]\t Could not create Monitor Mode interface!\n");
-        return -1;
+	printf("[!]\t Could not create Monitor Mode interface!\n");
+	return -1;
     } else {
-        printf("[+]\t Monitor Mode VAP: %s\n\n",lorcon_get_vap(context));
-        lorcon_free_driver_list(driver);
+	printf("[+]\t Monitor Mode VAP: %s\n\n",lorcon_get_vap(context));
+	lorcon_free_driver_list(driver);
     }
 
     // Get the MAC of the radio
@@ -646,50 +242,81 @@ int main(int argc, char *argv[]) {
     lorcon_set_ht_channel(context, channel, ch_flags);
 
     printf("[+]\t Using channel: %d flags %d\n", channel, ch_flags);
+
+    
     printf("\n[.]\tMCS %u %s %s\n\n", MCS, BW ? "40MHz" : "20MHz", GI ? "short-gi" : "long-gi");
-    */
-    //struct injector_args *args = calloc (sizeof (struct injector_args), 1);
-    /*args->context = context;
-    args->metapack = metapack;
-    args->txpack = txpack;
-    args->BW = BW;
-    args->GI = GI;
-    args->npackets = npackets;
-    args->interval = interval;
-    args->session_id = session_id;
-    args->ttime = ttime;
-    */
-    /* ---------------------------------- thread init---------------------------------- */
-    int n1 = 1, n2 = 2, n3 = 3;
+    count = 0;
+    while (1) {
+        memset(payload, 0, 2*PAYLOAD_LEN);
+        memset(payload_1, 0, PAYLOAD_LEN);
+	for (i = 0; i < PAYLOAD_LEN; i++){
+		payload[2*i] = count & 0x00FF;
+		payload[2*i+1] = (count & 0xFF00) >> 8;
+	}
+        memset(encoded_payload, 0, 14);
 
-    if(pthread_create(&tid2, NULL, update_mcs, (void *)&n2)!=0)
-	    printf("failed to create thread1 for msocket \n");
-    else
-	    printf("update_mcs thread successfully created \n");
+        // Set MCS count
+        encoded_payload[0] = MCS;
+        if (GI)
+            encoded_payload[0] |= HT_FLAG_GI;
+        if (BW)
+            encoded_payload[0] |= HT_FLAG_40;
 
-    if(pthread_create(&tid1, NULL, estimate_csi, (void *)&n1)!=0)
-	    printf("failed to create thread1 for msocket \n");
-    else 
-	    printf("estimate_csi thread successfully created \n");
+        // set the location code
+        encoded_payload[1] = lcode & 0xFF;
 
-    if(pthread_create(&tid3, NULL, inject_data, (void *)&n3)!=0)
-	    printf("failed to create thread2 for injector \n");
-    else
-	    printf("inject_data thread successfully created \n");
-//    pthread_join(tid2, NULL);
-//    pthread_join(tid1, NULL);
+        *encoded_counter = htonl(count);
+        *encoded_max = htonl(npackets);
+        *encoded_session = htonl(session_id);
 
-//    while(1);
+	
+        /*snprintf((char *) payload_1, PAYLOAD_LEN, "MCS %u %s%s Packet %u of %u",
+                    MCS,
+                    BW ? "40MHz" : "20MHz",
+                    GI ? " short-gi": "",
+                    count,
+                    npackets);
+        */
+
+        metapack = lcpa_init();
+
+        // Create timestamp
+        gettimeofday(&time, NULL);
+        timestamp = time.tv_sec * 1000000 + time.tv_usec;
+
+        lcpf_data(metapack,fcflags,duration,RA_MAC,TA_MAC,RA_MAC,TA_MAC,fragement,sequence);
+
+
+        lcpf_add_ie(metapack, 0, strlen("Packet_Injection"), "Packet_Injection");
+        lcpf_add_ie(metapack, 10, 14, encoded_payload);
+        lcpf_add_ie(metapack, 11, 2*PAYLOAD_LEN, payload);
+        lcpf_add_ie(metapack, 12, strlen((char *) payload_1), payload_1);
+
+
+        // Convert the LORCON metapack to a LORCON packet for sending
+        txpack = (lorcon_packet_t *) lorcon_packet_from_lcpa(context, metapack);
+
+        lorcon_packet_set_mcs(txpack, 1, MCS, GI, BW);
+		
+        if (lorcon_inject(context,txpack) < 0 ) 
+            return -1;
+
+        usleep(interval);
+
+        printf("\033[K\r");
+        printf("[+] Sent %d frames, Hit CTRL + C to stop...", totalcount);
+        fflush(stdout);
+        totalcount++;
+
+        lcpa_free(metapack); 
+    }
 
     printf("\n");
     // Close the interface
-    //lorcon_close(context);
+    lorcon_close(context);
     // Free the LORCON Context
-    //lorcon_free(context);	
-//    exit_program();
-//    free(csi_status);
-    //free(args);
-    pthread_exit(NULL);    
+    lorcon_free(context);	
+	
     return 0;
 }
 
